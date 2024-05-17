@@ -1,0 +1,24 @@
+{ "name": "github-ci-util-2405-pmb",
+  "version": "0.0.1",
+  "description": "Shared tools for my GitHub CI workflows.",
+  "keywords": [
+    "ci",
+    "github"
+  ],
+
+  "author": "M.K. (https://github.com/mk-pmb)",
+  "homepage": "https://github.com/mk-pmb/github-ci-util-2405-pmb/#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mk-pmb/github-ci-util-2405-pmb.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mk-pmb/github-ci-util-2405-pmb/issues"
+  },
+  "contributors": [],
+
+  "private": true, "license": "ISC",
+
+
+  "engines": { "bash": ">=4.0.0" }
+}
