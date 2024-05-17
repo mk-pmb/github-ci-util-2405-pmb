@@ -20,5 +20,5 @@
   "private": true, "license": "ISC",
 
 
-  "engines": { "bash": ">=4.0.0" }
+  "engines": { "npm": ">=7.0.0", "node": ">=16.0.0" }
 }
