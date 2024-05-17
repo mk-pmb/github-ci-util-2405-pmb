@@ -1,5 +1,13 @@
 
+# Site-specific stuff
+/.ghciu/*.@*
+/.ghciu/*.local/
+/*.@*
+
+
+
 # Auto-generated files:
+/.ghciu/tmp.*
 /tmp.*
 
 
