@@ -49,7 +49,11 @@ function ghciu_cli_main () {
   fi
   <<<"E: Task failed (rv=$RV):$(printf ' ‹%s›' "$CI_TASK" "$@"
     )" tee --append -- "$CI_LOG" >&2
-  tail --lines=20 -- "$CI_LOG" | ghciu_stepsumm_dump_textblock
+
+  # v-- The `uniq` is to tame node.js's `CallSite {},` spam.
+  tail --bytes=4K -- "$CI_LOG" | uniq | tail --lines=20 \
+    | ghciu_stepsumm_dump_textblock
+
   return "$RV"
 }
 
