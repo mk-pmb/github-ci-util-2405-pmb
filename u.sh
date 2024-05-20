@@ -14,14 +14,11 @@ function ghciu_cli_main () {
     source_these_files --lib {bash_,}funcs/*.sh || return $?
   ghciu_cli_init_before_config || return $?
 
-  if [ "$1" == . ]; then
-    shift
-    while [ "$1" != '.' ]; do
-      source_these_files --ci-dot "$1" || return $?
-      shift
-    done
-    shift
-  fi
+  [ "$1" != . ] || while shift && [ "$#" -ge 1 ]; do case "$1" in
+    . ) shift; break;;
+    *=* ) CFG["${1%%=*}"]="${1#*=}";;
+    * ) source_these_files --ci-dot "$1" || return $?;;
+  esac; done
 
   local CI_TASK="$1"; shift
   [ -n "$CI_TASK" ] || CI_TASK="${CFG[default_task]}"
