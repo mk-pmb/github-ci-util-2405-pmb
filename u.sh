@@ -27,9 +27,15 @@ function ghciu_cli_main () {
   [ "$(type -t "ghciu_$CI_TASK")" == function ] && CI_TASK="ghciu_$CI_TASK"
 
   local CI_LOGS_PREFIX=
-  for CI_LOGS_PREFIX in "logs.@$HOSTNAME/" tmp.; do
-    [ -d "$CI_LOGS_PREFIX" ] && break
+  for CI_LOGS_PREFIX in "@$HOSTNAME" local; do
+    for CI_LOGS_PREFIX in {.ghciu/,,tmp.}logs."$CI_LOGS_PREFIX"/; do
+      [ -d "$CI_LOGS_PREFIX" ] && break 2
+    done
   done
+  if [ ! -d "$CI_LOGS_PREFIX" ]; then
+    CI_LOGS_PREFIX='.ghciu/logs.local/'
+    mkdir --parents -- "$CI_LOGS_PREFIX"
+  fi
   local CI_LOG="$CI_LOGS_PREFIX$(basename -- "$CI_TASK" .sh).log"
   >>"$CI_LOG" || return $?$(echo E: "Cannot write to CI log: $CI_LOG" >&2)
 
