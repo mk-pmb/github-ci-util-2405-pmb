@@ -24,6 +24,8 @@ function ghciu_cli_main () {
   fi
 
   local CI_TASK="$1"; shift
+  [ -n "$CI_TASK" ] || CI_TASK="${CFG[default_task]}"
+  [ -n "$CI_TASK" ] || CI_TASK='default_task'
   [ "$(type -t "ghciu_$CI_TASK")" == function ] && CI_TASK="ghciu_$CI_TASK"
 
   local CI_LOGS_PREFIX=
