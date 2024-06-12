@@ -10,6 +10,17 @@ Shared tools for my GitHub CI workflows.
 
 
 
+Setup
+-----
+
+In your GitHub Actions workflow, you can install ghciu as an action:
+
+```yaml
+      - uses: mk-pmb/github-ci-util-2405-pmb@master
+```
+
+
+
 Usage
 -----
 

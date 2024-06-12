@@ -12,18 +12,9 @@ on:
 jobs:
   job_ci:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: 'Install CI utils'
-        run: >
-          sudo -E sh -c 'R=mk-pmb/github-ci-util-2405-pmb; B=master
-          ; mkdir -p /ghciu && cd /ghciu && wget -q --
-          "https://github.com/$R/archive/refs/heads/$B.tar.gz"
-          && tar --strip-components=1 -xvzf "$B.tar.gz"
-          && ./install_globally.sh'
-
+      - uses: mk-pmb/github-ci-util-2405-pmb@experimental
       - run: ghciu vdo date -R
       - run: ghciu vdo megafail || true
 
