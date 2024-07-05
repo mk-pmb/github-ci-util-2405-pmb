@@ -5,7 +5,7 @@
 function ghciu_stepsumm_dump_textblock () {
   [ -n "$GITHUB_STEP_SUMMARY" ] || return 0
   ( echo
-    echo '```'"$FMT"
+    echo '```'"${FMT:-text}"
     sed -re '/^\x60{3}/s~^.~\&#96;~'
     echo '```'
     echo
