@@ -1,5 +1,5 @@
 { "name": "github-ci-util-2405-pmb",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Shared tools for my GitHub CI workflows.",
   "keywords": [
     "ci",
