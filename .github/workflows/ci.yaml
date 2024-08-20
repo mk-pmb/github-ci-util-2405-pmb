@@ -12,17 +12,17 @@ on:
 jobs:
   job_ci:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: 'Install CI utils'
-        run: >
-          sudo -E sh -c 'R=mk-pmb/github-ci-util-2405-pmb; B=master
-          ; mkdir -p /ghciu && cd /ghciu && wget -q --
-          "https://github.com/$R/archive/refs/heads/$B.tar.gz"
-          && tar --strip-components=1 -xvzf "$B.tar.gz"
-          && ./install_globally.sh'
+      ########################################################################
+      # Branch selection in the "uses" task
+      #=======================================================================
+      # The part after `@` specifies the branch to use.
+      # I need `experimental` here in order to conveniently test that branch.
+      # However, in all other repos you should probably use "v1" instead:
+      # - uses: mk-pmb/github-ci-util-2405-pmb/act/install@v1
+      - uses: mk-pmb/github-ci-util-2405-pmb/act/install@experimental
 
       - run: ghciu vdo date -R
       - run: ghciu vdo megafail || true
