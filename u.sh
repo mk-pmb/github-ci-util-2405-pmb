@@ -25,6 +25,7 @@ function ghciu_cli_main () {
     * ) source_these_files --ci-dot "$1" || return $?;;
   esac; done
 
+  if [ "$1" == --no-log ]; then shift; "$@"; return $?; fi
   local CI_TASK="$1"; shift
   [ -n "$CI_TASK" ] || CI_TASK="${CFG[default_task]}"
   [ -n "$CI_TASK" ] || CI_TASK='default_task'
