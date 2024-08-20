@@ -13,6 +13,7 @@ function ghciu_cli_main () {
   esac
 
   local -A CFG=() MEM=( [start_uts]="$EPOCHSECONDS" )
+  CFG[task_done_report_file]='/dev/stdout'
   source -- "$CI_FUNCD"/ci_cli_init.sh || return $?
   source_these_files --lib "$CI_FUNCD"/*.sh || return $?
   [ . -ef "$GHCIU_DIR" ] || \
@@ -26,6 +27,10 @@ function ghciu_cli_main () {
   esac; done
 
   if [ "$1" == --no-log ]; then shift; "$@"; return $?; fi
+  if [ "$1" == --succeed-quietly ]; then
+    CFG[task_done_report_file]=/dev/null
+    shift
+  fi
   local CI_TASK="$1"; shift
   [ -n "$CI_TASK" ] || CI_TASK="${CFG[default_task]}"
   [ -n "$CI_TASK" ] || CI_TASK='default_task'
@@ -49,8 +54,12 @@ function ghciu_cli_main () {
   wait # … for tee to finish writing
   sleep 0.2s # wait a bit more for tee output to flush
   if [ "$RV" == 0 ]; then
-    <<<"D: Task done:$(printf ' ‹%s›' "$CI_TASK" "$@"
-      )" tee --append -- "$CI_LOG"
+    RV="D: Task done:$(printf ' ‹%s›' "$CI_TASK" "$@")"
+    echo "$RV" >>"$CI_LOG"
+    echo "$RV" >>"${CFG[task_done_report_file]}"
+    # ^-- We cannot use tee because depending on whether
+    #     CFG[task_done_report_file] is /dev/stdout we'd need to either
+    #     omit it from the tee arguments or mute tee's default output.
     return 0
   fi
   <<<"E: Task failed (rv=$RV):$(printf ' ‹%s›' "$CI_TASK" "$@"
