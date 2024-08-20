@@ -6,8 +6,13 @@ function ghciu_cli_main () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
   local GHCIU_DIR="$(readlink -m -- "$BASH_SOURCE"/..)"
   local DBGLV="${DEBUGLEVEL:-0}"
-  local -A CFG=() MEM=( [start_uts]="$EPOCHSECONDS" )
   local CI_FUNCD="$GHCIU_DIR/bash_funcs"
+  case "$#:$*" in
+    1:--print-ghciu-dir ) echo "$GHCIU_DIR"; return $?;;
+    1:--print-funcs-dir ) echo "$CI_FUNCD"; return $?;;
+  esac
+
+  local -A CFG=() MEM=( [start_uts]="$EPOCHSECONDS" )
   source -- "$CI_FUNCD"/ci_cli_init.sh || return $?
   source_these_files --lib "$CI_FUNCD"/*.sh || return $?
   [ . -ef "$GHCIU_DIR" ] || \
