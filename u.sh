@@ -7,9 +7,9 @@ function ghciu_cli_main () {
   local GHCIU_DIR="$(readlink -m -- "$BASH_SOURCE"/..)"
   local DBGLV="${DEBUGLEVEL:-0}"
   local CI_FUNCD="$GHCIU_DIR/bash_funcs"
-  case "$#:$*" in
-    1:--print-ghciu-dir ) echo "$GHCIU_DIR"; return $?;;
-    1:--print-funcs-dir ) echo "$CI_FUNCD"; return $?;;
+  case "$1" in
+    --print-ghciu-dir ) echo "$GHCIU_DIR"; return $?;;
+    --print-funcs-dir ) echo "$CI_FUNCD"; return $?;;
   esac
 
   local -A CFG=() MEM=( [start_uts]="$EPOCHSECONDS" )
