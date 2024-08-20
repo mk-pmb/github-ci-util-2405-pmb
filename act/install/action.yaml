@@ -1,0 +1,45 @@
+%YAML 1.1
+# -*- coding: UTF-8, tab-width: 2 -*-
+---
+
+name: 'Install ghciu'
+description: 'Install ghciu… or anything from any GitHub repo.'
+
+inputs:
+
+  repo:
+    description: "What to install. Empty = This action's repo."
+    required: false
+    default: ''
+
+  dest:
+    description: 'Where (path) to install it to.'
+    required: false
+    default: '/usr/local/lib/<repo:basename>'
+
+  nodejs_version:
+    description: 'Which node.js to install. Major version only, as a number, 0 = skip.'
+    required: false
+    default: 20
+
+  npm_version:
+    description: 'Whether to install a specific npm version.'
+    required: false
+    default: 0
+
+runs:
+  using: 'composite'
+  steps:
+
+    - name: Install Node.js ${{ matrix.t.node }}
+      uses: actions/setup-node@v4
+      if: '${{ inputs.nodejs_version > 0 }}'
+      with:
+        node-version: '${{ inputs.nodejs_version }}.x'
+
+    - name: 'Install CI utils'
+      run: >
+        "$GITHUB_ACTION_PATH"/../../install_globally.sh
+      shell: bash
+
+...
