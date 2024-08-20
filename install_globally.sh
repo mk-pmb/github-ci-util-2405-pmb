@@ -7,7 +7,7 @@ function install_globally () {
   # cd -- "$SELFPATH" || return $?
   local ORIG= LINK= DEST_BASE='/usr/local/bin/ghciu'
   [ -L "$DEST_BASE" ] && rm -v -- "$DEST_BASE"
-  ln -vsT -- "$SELFPATH"/u.sh "$DEST_BASE" || return $?
+  ln -vsT -- "$SELFPATH"/cli.sh "$DEST_BASE" || return $?
   for ORIG in "$SELFPATH"/bash_funcs/*.sh; do
     [ -x "$ORIG" ] || continue
     LINK="$DEST_BASE-$(basename -- "${ORIG//_/-}" .sh)"
