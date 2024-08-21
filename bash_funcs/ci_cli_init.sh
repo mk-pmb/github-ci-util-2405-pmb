@@ -21,7 +21,10 @@ function ghciu_cli_init_before_config () {
 
 
 function in_func () {
-  "$@" || return $?$(echo W: "$FUNCNAME $* failed (rv=$?)" >&2)
+  case "$1" in
+    eval ) eval "shift 2; $2";;
+    * ) "$@";;
+  esac || return $?$(echo W: "$FUNCNAME $* failed (rv=$?)" >&2)
 }
 
 
