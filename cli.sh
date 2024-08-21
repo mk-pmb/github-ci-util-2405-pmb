@@ -6,7 +6,9 @@ function ghciu_cli_main () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
   local GHCIU_DIR="$(readlink -m -- "$BASH_SOURCE"/..)"
   local DBGLV="${DEBUGLEVEL:-0}"
+  local CI_INVOKED_IN="$PWD"
   local CI_FUNCD="$GHCIU_DIR/bash_funcs"
+  local CI_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   case "$1" in
     --print-ghciu-dir ) echo "$GHCIU_DIR"; return $?;;
     --print-funcs-dir ) echo "$CI_FUNCD"; return $?;;
@@ -16,8 +18,9 @@ function ghciu_cli_main () {
   CFG[task_done_report_file]='/dev/stdout'
   source -- "$CI_FUNCD"/ci_cli_init.sh || return $?
   source_these_files --lib "$CI_FUNCD"/*.sh || return $?
-  [ . -ef "$GHCIU_DIR" ] || \
-    source_these_files --lib {bash_,}funcs/*.sh || return $?
+  source_additional_bash_funcs_files --had="$GHCIU_DIR" \
+    "$CI_PROJECT_DIR" \
+    . || return $?
   ghciu_cli_init_before_config || return $?
 
   [ "$1" != . ] || while shift && [ "$#" -ge 1 ]; do case "$1" in
@@ -36,23 +39,17 @@ function ghciu_cli_main () {
   [ -n "$CI_TASK" ] || CI_TASK='default_task'
   [ "$(type -t "ghciu_$CI_TASK")" == function ] && CI_TASK="ghciu_$CI_TASK"
 
-  local CI_LOGS_PREFIX=
-  for CI_LOGS_PREFIX in "@$HOSTNAME" local; do
-    for CI_LOGS_PREFIX in {.ghciu/,,tmp.}logs."$CI_LOGS_PREFIX"/; do
-      [ -d "$CI_LOGS_PREFIX" ] && break 2
-    done
-  done
-  if [ ! -d "$CI_LOGS_PREFIX" ]; then
-    CI_LOGS_PREFIX='.ghciu/logs.local/'
-    mkdir --parents -- "$CI_LOGS_PREFIX"
-  fi
-  local CI_LOG="$CI_LOGS_PREFIX$(basename -- "$CI_TASK" .sh).log"
+  local CI_LOG="$(ghciu_decide_logfile_name "$CI_TASK")"
+  mkdir --parents -- "$(dirname -- "$CI_LOG")"
   >>"$CI_LOG" || return $?$(echo E: "Cannot write to CI log: $CI_LOG" >&2)
 
   "$CI_TASK" "$@" &> >(tee -- "$CI_LOG")
   local RV=$?
   wait # … for tee to finish writing
   sleep 0.2s # wait a bit more for tee output to flush
+  cd -- "$CI_INVOKED_IN" || echo W: >&2 \
+    "Failed to chdir back to our original working directory:" \
+    "$CI_INVOKED_IN — this will probably mess with logging."
   if [ "$RV" == 0 ]; then
     RV="D: Task done:$(printf ' ‹%s›' "$CI_TASK" "$@")"
     echo "$RV" >>"$CI_LOG"
