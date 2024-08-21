@@ -12,4 +12,16 @@ function unindent () {
 }
 
 
+function unindent_vars_inplace () {
+  while [ "$#" -ge 1 ]; do
+    case "$1" in
+      '' ) continue;;
+      *=* ) eval "${1%%=*}"'="$(unindent "${1#*=}")"';;
+      * ) eval "$1"'="$(unindent "$'"$1"'")"';;
+    esac
+    shift
+  done
+}
+
+
 [ "$1" == --lib ] && return 0; unindent "$@"; exit $?
