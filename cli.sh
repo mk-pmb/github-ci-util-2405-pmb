@@ -37,6 +37,16 @@ function ghciu_cli_main () {
   local CI_TASK="$1"; shift
   [ -n "$CI_TASK" ] || CI_TASK="${CFG[default_task]}"
   [ -n "$CI_TASK" ] || CI_TASK='default_task'
+  case "$CI_TASK" in
+    '' ) ;;
+    ghciu+s://* | \
+    proj+s://* | \
+    '' ) set -- . "${CI_TASK/+s/}" "$@"; CI_TASK='chdir_relative_and_source';;
+  esac
+  case "$CI_TASK" in
+    ghciu://* ) CI_TASK="$GHCIU_DIR${CI_TASK#*/}";;
+    proj://* ) CI_TASK="$CI_PROJECT_DIR${CI_TASK#*/}";;
+  esac
   [ "$(type -t "ghciu_$CI_TASK")" == function ] && CI_TASK="ghciu_$CI_TASK"
 
   local CI_LOG="$(ghciu_decide_logfile_name "$CI_TASK")"
