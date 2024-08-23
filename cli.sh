@@ -67,6 +67,7 @@ function ghciu_cli_main () {
     # ^-- We cannot use tee because depending on whether
     #     CFG[task_done_report_file] is /dev/stdout we'd need to either
     #     omit it from the tee arguments or mute tee's default output.
+    ghciu_ensure_stepsumm_size_limit || return $?
     return 0
   fi
   <<<"E: Task failed (rv=$RV):$(printf ' ‹%s›' "$CI_TASK" "$@"
@@ -74,7 +75,7 @@ function ghciu_cli_main () {
 
   # v-- The `uniq` is to tame node.js's `CallSite {},` spam.
   tail --bytes=4K -- "$CI_LOG" | uniq | tail --lines=20 \
-    | ghciu_stepsumm_dump_textblock
+    | ghciu_stepsumm_dump_textblock # implies ghciu_ensure_stepsumm_size_limit
 
   return "$RV"
 }
