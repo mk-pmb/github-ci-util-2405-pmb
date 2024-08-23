@@ -1,0 +1,138 @@
+%YAML 1.1
+# -*- coding: UTF-8, tab-width: 2 -*-
+---
+
+name: 'Purge old workflow runs'
+description: ''
+
+inputs:
+
+  api_token:
+    description: >
+      Your workflow's token with proper permission to delete workflows.
+      (See example workflow.)
+      The action does receive its own token via environment variable
+      `GITHUB_TOKEN`, but that one is different from your workflow's token,
+      and most crucially, lacks permissions.
+    required: false
+    default: ''
+
+  older_than:
+    description: >
+      How old the workflow must be to be deleted.
+      Valid values are anything that the Ubuntu `date` command understands,
+      e.g. `2024-08-23 16:00 UTC` or `1 week ago`.
+      Currently, age is calculated starting at creation of the CI job.
+    required: false
+    default: '30 days'
+
+  conclusions:
+    description: >
+      Restrict the purging to runs whose conclusion
+      is in this space-separated list.
+      Also, if you want the purging run to be able to delete its own check
+      suite (and thus, itself), you have to add the special value `SELF`.
+      It's omitted by default to make it safe to re-run any check suite.
+    required: false
+    default: 'startup_failure cancelled failure success'
+
+  trigger_events:
+    description: >
+      Only purge runs whose triggering event
+      is in this space-separated list.
+      Set this to just an asterisk (`*`) to ignore this criterion.
+    required: false
+    default: >
+      merge_request
+      push
+      workflow_dispatch
+
+  workflows_include:
+    description: >
+      Only purge runs whose workflow base file name (no path, no `.yaml`)
+      is in this space-separated list.
+      Single asterisk (`*`) = include all that are not excluded.
+    required: false
+    default: '*'
+
+  workflows_exclude:
+    description: >
+      Never purge runs whose workflow base file name (no path, no `.yaml`)
+      is in this space-separated list.
+      Empty = ignore this criterion.
+      Single asterisk (`*`) = exclude all = basically disable this action.
+    required: false
+    default: >
+      wipe_old_workflow_runs
+    # The default value makes it easy to just re-run the task in this repo.
+
+  branches_include:
+    description: >
+      Only purge runs whose HEAD branch
+      is in this space-separated list.
+      Single asterisk (`*`) = include all that are not excluded.
+    required: false
+    default: '*'
+
+  branches_exclude:
+    description: >
+      Never purge runs whose HEAD branch
+      is in this space-separated list.
+      Empty = ignore this criterion.
+      Single asterisk (`*`) = exclude all = basically disable this action.
+    required: false
+    default: ''
+
+  max_failed:
+    description: >
+      Abort if we encounter this many errors.
+    required: false
+    default: 10
+
+  max_purged:
+    description: >
+      Abort if we have deleted this many workflow runs.
+    required: false
+    default: 9009009009
+
+  overall_timeout_seconds:
+    description: >
+      Abort if all of this (the entire action invocation) takes longer than
+      this many seconds.
+    required: false
+    default: 900
+
+  api_cooldown_seconds:
+    description: >
+      How many seconds to wait between API calls.
+      May be useful if you encounter problems with API rate limiting.
+      The default should be good as is. Be gentle to GitHub's servers.
+    required: false
+    default: 1
+
+  api_pagesize:
+    description: >
+      How many search results to request in one batch.
+      May be useful if you encounter problems with API rate limiting.
+      The default should be good as is. Be gentle to GitHub's servers.
+    required: false
+    default: 100
+
+
+runs:
+  using: 'composite'
+  steps:
+
+    - uses: actions/setup-node@v4
+
+    - name: 'Install CI utils'
+      run: >
+        "$GITHUB_ACTION_PATH"/../install/install.sh
+      shell: bash
+
+    - run: 'ghciu ghciu+s://act/purge-old-workflow-runs/purge.sh'
+      shell: bash
+      env:
+        INPUTS_JSON: '${{ toJSON(inputs) }}'
+
+...
