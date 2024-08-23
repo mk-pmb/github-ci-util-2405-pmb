@@ -1,7 +1,6 @@
 #!/bin/bash
 # -*- coding: utf-8, tab-width: 2 -*-
 
-
 function log_rtc_stopwatch () {
   local DURA=
   let DURA="$1"; shift
@@ -16,21 +15,5 @@ function log_rtc_stopwatch () {
   MSG="${MSG//¤/$DURA}"
   printf 'T: [%(%F %T)T] %s\n' -1 "$MSG"
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 return 0
