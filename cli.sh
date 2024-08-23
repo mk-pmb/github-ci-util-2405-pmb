@@ -4,8 +4,8 @@
 
 function ghciu_cli_main () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
-  local GHCIU_DIR="$(readlink -m -- "$BASH_SOURCE"/..)"
   local DBGLV="${DEBUGLEVEL:-0}"
+  local GHCIU_DIR="$(readlink -m -- "$BASH_SOURCE"/..)"
   local CI_INVOKED_IN="$PWD"
   local CI_FUNCD="$GHCIU_DIR/bash_funcs"
   local CI_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -29,11 +29,13 @@ function ghciu_cli_main () {
     * ) echo source_these_files --ci-dot "$1" || return $?;;
   esac; done
 
-  if [ "$1" == --no-log ]; then shift; "$@"; return $?; fi
+  local CI_LOG=
+  if [ "$1" == --no-log ]; then shift; CI_LOG='/dev/null'; fi
   if [ "$1" == --succeed-quietly ]; then
     CFG[task_done_report_file]=/dev/null
     shift
   fi
+
   local CI_TASK="$1"; shift
   [ -n "$CI_TASK" ] || CI_TASK="${CFG[default_task]}"
   [ -n "$CI_TASK" ] || CI_TASK='default_task'
@@ -49,11 +51,20 @@ function ghciu_cli_main () {
   esac
   [ "$(type -t "ghciu_$CI_TASK")" == function ] && CI_TASK="ghciu_$CI_TASK"
 
-  local CI_LOG="$(ghciu_decide_logfile_name "$CI_TASK")"
+  [ -n "$CI_LOG" ] || CI_LOG="$(ghciu_decide_logfile_name "$CI_TASK"
+    )" || return $?$(echo E: "Failed to decide logfile destination!" >&2)
   mkdir --parents -- "$(dirname -- "$CI_LOG")"
   >>"$CI_LOG" || return $?$(echo E: "Cannot write to CI log: $CI_LOG" >&2)
 
-  "$CI_TASK" "$@" &> >(tee -- "$CI_LOG")
+  export CI_FUNCD
+  export CI_INVOKED_IN
+  export CI_LOG
+  export CI_PROJECT_DIR
+  export CI_TASK
+  export GHCIU_DIR
+
+  ghciu_magic_cilog_tee "$CI_LOG" "$CI_TASK" "$@" &
+  wait "$!"
   local RV=$?
   wait # … for tee to finish writing
   sleep 0.2s # wait a bit more for tee output to flush

@@ -111,6 +111,18 @@ function ghciu_decide_logfile_name () {
 }
 
 
+function ghciu_magic_cilog_tee () {
+  case "$1" in
+    '' | /dev/null ) ;;
+    /dev/stdout ) exec 2>&1;;
+    /dev/stderr ) exec >&2;;
+    * ) exec &> >(tee -- "$1");;
+  esac
+  shift
+  "$@"; return $?
+}
+
+
 
 
 
