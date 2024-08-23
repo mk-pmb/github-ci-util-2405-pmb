@@ -84,9 +84,19 @@ function ghciu_cli_main () {
   <<<"E: Task failed (rv=$RV):$(printf ' ‹%s›' "$CI_TASK" "$@"
     )" tee --append -- "$CI_LOG" >&2
 
-  # v-- The `uniq` is to tame node.js's `CallSite {},` spam.
-  tail --bytes=4K -- "$CI_LOG" | uniq | tail --lines=20 \
-    | ghciu_stepsumm_dump_textblock # implies ghciu_ensure_stepsumm_size_limit
+  if [ -z "$GITHUB_STEP_SUMMARY" ]; then
+    true
+  elif [[ "$CI_LOG" == /dev/* ]]; then
+    true
+  elif [ -f "$CI_LOG" -a -s "$CI_LOG" ]; then
+    # v-- The `uniq` is to tame node.js's `CallSite {},` spam.
+    tail --bytes=4K -- "$CI_LOG" | uniq | tail --lines=20 \
+      | ghciu_stepsumm_dump_textblock
+      # ^-- implies ghciu_ensure_stepsumm_size_limit
+  elif [ -f "$CI_LOG" ]; then
+    echo "ghciu: Empty CI log albeit task failed (rv=$RV): \`$CI_LOG\`" \
+      >>"$GITHUB_STEP_SUMMARY"
+  fi
 
   return "$RV"
 }
