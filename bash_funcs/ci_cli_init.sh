@@ -4,7 +4,8 @@
 
 function ghciu_cli_init_before_config () {
   local ITEM= ADD=
-  for ITEM in "$PWD"/node_modules/.bin/; do
+  for ITEM in "$GHCIU_DIR" "$CI_PROJECT_DIR" "$CI_INVOKED_IN"; do
+    ITEM+='/node_modules/.bin/'
     [ -d "$ITEM" ] || continue
     ITEM="${ITEM%/}"
     [[ ":$PATH:" == *":$ITEM:"* ]] && continue
