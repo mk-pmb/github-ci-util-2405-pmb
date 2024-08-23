@@ -1,5 +1,5 @@
 { "name": "github-ci-util-2405-pmb",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shared tools for my GitHub CI workflows.",
   "keywords": [
     "ci",
@@ -18,6 +18,12 @@
   "contributors": [],
 
   "private": true, "license": "ISC",
+
+  "dependencies": {
+    "enveval2401-pmb": "^0.1.1"
+  },
+  "devDependencies": {
+  },
 
 
   "engines": { "npm": ">=7.0.0", "node": ">=16.0.0" }
