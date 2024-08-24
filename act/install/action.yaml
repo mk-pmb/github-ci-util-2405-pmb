@@ -42,4 +42,10 @@ runs:
         "$GITHUB_ACTION_PATH"/../../install_globally.sh
       shell: bash
 
+    - name: 'Gather metadata for the current run attempt'
+      run: >
+        ghciu chdir_relative_and_source .
+        "$GITHUB_ACTION_PATH"/gather_ci_run_meta.sh
+      shell: bash
+
 ...
