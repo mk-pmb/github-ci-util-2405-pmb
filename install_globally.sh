@@ -17,6 +17,7 @@ function install_globally () {
   cd -- "$SELFPATH" || return $?
   cp -vT -- act/install/npmrc.basics.ini "$HOME"/.npmrc || return $?
   ensure_nodejs_symlink || return $?
+  npm install . || return $?
 }
 
 
