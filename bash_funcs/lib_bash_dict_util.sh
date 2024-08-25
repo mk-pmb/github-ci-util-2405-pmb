@@ -16,6 +16,11 @@ function eq_keyval_assign () {
 }
 
 
+function json_to_bash_dict_init () {
+  DATA="$1" CODE='clog(toBashDictSp(data))' enveval2401-pmb
+}
+
+
 
 
 return 0
