@@ -31,8 +31,7 @@ function vdo () {
   VDO_DESCR="${VDO_DESCR% }"
   [ -n "$VDO_DESCR" ] || return 0
   [ "${#VDO_DESCR}" -lt 70 ] || VDO_DESCR="${VDO_DESCR:0:70}…"
-  echo "# >>--->> $VDO_DESCR" \
-    '>>------------------------------------------>>'
+  vdo__cutline "# >>--->> $VDO_DESCR >>---" - '>>' 120
 
   case "$(type -t "$1")" in
     builtin | function ) VDO_CMD_EXEC=;;
@@ -61,12 +60,29 @@ function vdo () {
   local VDO_WATCHDOG_RV=$?
   [ "$VDO_WATCHDOG_RV" == 0 ] || echo E: $FUNCNAME: >&2 \
     "Watchdog failed, rv=$VDO_WATCHDOG_RV"
-
-  echo "# <<---<< $VDO_DESCR, rv=$VDO_CMD_RV, took $VDO_DURA sec" \
-    '<<------------------------------------------<<'
+  VDO_DESCR+=", rv=$VDO_CMD_RV, took $VDO_DURA sec"
+  vdo__cutline "# <<---<< $VDO_DESCR <<---" - '<<' 120
   echo
   return $(( VDO_CMD_RV + VDO_TEE_RV + VDO_WATCHDOG_RV ))
 }
+
+
+function vdo__cutline () {
+  local HEAD="$1"; shift
+  local FILL="$1"; shift
+  local TAIL="$1"; shift
+  local MIN_WIDTH="$1"; shift
+  local PAD= MISS=
+  let MISS="$MIN_WIDTH - ${#HEAD} - ${#TAIL}"
+  if [ "$MISS" -ge 1 ]; then
+    printf -v PAD -- '% *s' "$MISS" ''
+    PAD="${PAD// /$FILL}"
+    PAD="${PAD:0:$MISS}"
+  fi
+  echo "$HEAD$PAD$TAIL"
+}
+
+
 
 
 [ "$1" == --lib ] && return 0; vdo "$@"; exit $?
