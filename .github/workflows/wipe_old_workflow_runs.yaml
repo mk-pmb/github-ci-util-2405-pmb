@@ -4,18 +4,17 @@
 # -*- coding: UTF-8, tab-width: 2 -*-
 ---
 
-name: '☂ CI tests'
+name: '🗑 Wipe old workflow runs manually on demand'
 
 on:
-  push:
-    branches:
-      - '*'
+  workflow_dispatch:
 
 jobs:
-  job_ci:
+  wipe_old_workflows:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
     steps:
-      - uses: actions/checkout@v4
 
       ########################################################################
       # Branch selection in the "uses" task
@@ -23,24 +22,11 @@ jobs:
       # The part after `@` specifies the branch to use.
       # I need `experimental` here in order to conveniently test that branch.
       # However, in all other repos you should probably use "v1" instead:
-      # - uses: mk-pmb/github-ci-util-2405-pmb/act/install@v1
-      - uses: mk-pmb/github-ci-util-2405-pmb/act/install@experimental
-
-      - run: ghciu vdo date -R
-      - run: ghciu vdo megafail || true
-
-
-  wipe_old_workflows:
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-    steps:
-
-      # Branch selection in the "uses" task: see above
+      # - uses: mk-pmb/github-ci-util-2405-pmb/act/purge-old-workflow-runs@v1
       - uses: mk-pmb/github-ci-util-2405-pmb/act/purge-old-workflow-runs@experimental
         with:
           api_token: '${{ github.token }}'
-          older_than: '2 minutes ago'
+          older_than: '10 seconds ago'
 
 
 
