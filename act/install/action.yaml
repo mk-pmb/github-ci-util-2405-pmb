@@ -38,14 +38,7 @@ runs:
         node-version: '${{ inputs.nodejs_version }}.x'
 
     - name: 'Install CI utils'
-      run: >
-        "$GITHUB_ACTION_PATH"/../../install_globally.sh
-      shell: bash
-
-    - name: 'Gather metadata for the current run attempt'
-      run: >
-        ghciu chdir_relative_and_source .
-        "$GITHUB_ACTION_PATH"/gather_ci_run_meta.sh
+      run: '"$GITHUB_ACTION_PATH"/install.sh'
       shell: bash
 
 ...
