@@ -41,6 +41,21 @@ function ghciu_stepsumm_dump_file () {
 }
 
 
+function fmt_markdown_textblock__details () {
+  echo
+  case "$1" in
+    '<open>'* ) echo "<details open><summary>${1#*>}</summary>";;
+    * ) echo "<details><summary>$1</summary>";;
+  esac
+  shift
+  fmt_markdown_textblock "$@"
+  local RV=$?
+  echo "</details>"
+  echo
+  return "$RV"
+}
+
+
 function fmt_markdown_textblock__details_file () {
   local FILE="$1"; shift
   case "$FILE" in
@@ -80,21 +95,6 @@ function fmt_markdown_textblock__details_file__count_lines () {
   SIZE="${SIZE%%$'\t'*}"
   # SIZE="${SIZE// /}"
   TITLE+=" ($SIZE bytes, $N_LN lines)"
-}
-
-
-function fmt_markdown_textblock__details () {
-  echo
-  case "$1" in
-    '<open>'* ) echo "<details open><summary>${1#*>}</summary>";;
-    * ) echo "<details><summary>$1</summary>";;
-  esac
-  shift
-  fmt_markdown_textblock "$@"
-  local RV=$?
-  echo "</details>"
-  echo
-  return "$RV"
 }
 
 
