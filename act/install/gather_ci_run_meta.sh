@@ -13,6 +13,8 @@ function gather_ci_run_meta () {
   [ -n "$GITHUB_REPOSITORY" ] || return 4$(
     echo E: 'Empty GITHUB_REPOSITORY!' >&2)
 
+  wget --version >/dev/null || gather_ci_run_meta__panic 'No wget!'
+
   case "$1" in
     '' ) ;;
 
@@ -27,6 +29,17 @@ function gather_ci_run_meta () {
     "Gathering meta data failed. The API may have changed in a way that" \
     "ghciu is not compatible with yet. Maybe you need to update it," \
     "or run a newer version of its install action.")
+}
+
+
+function gather_ci_run_meta__panic () {
+  echo '!! 🔥🌋🔥 !! PANIC !! 🔥🌋🔥 !! 🔥🌋🔥 !! 🔥🌋🔥 !! 🔥🌋🔥 !! 🔥🌋🔥 !!'
+  echo "!! $*"
+  echo '!! 🔥🌋🔥 !! PANIC !! 🔥🌋🔥 !! 🔥🌋🔥 !! 🔥🌋🔥 !! 🔥🌋🔥 !! 🔥🌋🔥 !!'
+  echo '!!'
+  env | grep -Pie 'github|container|runtime' \
+    | LANG=C sort | sed -re 's!^([^=]+)=!\1:\n\1=!'
+  exit 8
 }
 
 
