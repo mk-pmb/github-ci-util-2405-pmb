@@ -19,7 +19,16 @@ function fmt_markdown_textblock__core () {
       FMT='inline';;
     * ) echo '```'"${FMT:-text}";;
   esac
-  sed -re 's~^\x60~\&#x60;~g;s~^<~\&lt;~g'
+
+  # How can we escape "`" and "<" characters at the start of a line for
+  # GitHub-flavored markdown?
+  # I tried a preceeding backslash, it will be printed verbatim.
+  # sed -re 's~^\x60~\&#96;~g;s~^<~\&lt;~g'
+  # I tried HTML entities, they will be printed verbatim.
+  # sed -re 's~^\x60|^<~\\&~g'
+  # I tried a zero-width non-joiner, … it's invisible at least.
+  sed -re 's~^\x60|^<~\xE2\x80\x8C&~g'
+
   [ "$FMT" == inline ] || echo '```'
   # echo; echo "trace:$(printf -- ' &larr; `%s`' "${FUNCNAME[@]}")"
   echo
