@@ -1,3 +1,20 @@
 { "name": "ghciu-cherries",
+  "version": "0.0.0",
+  "description": "The cherries are pre-made commits meant to be easy to cherry-pick into your project. (Albeit the actual git command will be `am`, not `cherry-pick`.)",
+  "keywords": [],
+
+  "author": "M.K. (https://github.com/mk-pmb)",
+  "homepage": "https://github.com/mk-pmb/github-ci-util-2405-pmb/#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mk-pmb/github-ci-util-2405-pmb.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mk-pmb/github-ci-util-2405-pmb/issues"
+  },
+  "contributors": [],
+
+  "private": true, "license": "ISC",
+
   "engines": { "git": ">=2.25.1" }
 }
