@@ -43,9 +43,11 @@ inputs:
       Set this to just an asterisk (`*`) to ignore this criterion.
     required: false
     default: >
+      dynamic
       merge_request
       push
       workflow_dispatch
+    # ^-- The "dynamic" event is stuff like automatic gh-pages deploy.
 
   workflows_include:
     description: >
