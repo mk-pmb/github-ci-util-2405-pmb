@@ -1,0 +1,5 @@
+
+*.gz -text
+*.tar -text
+*.tgz -text
+*.xz -text
