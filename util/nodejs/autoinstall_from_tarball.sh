@@ -10,6 +10,7 @@ function ain_cli_init () {
   local CI_FUNCD="$GHCIU_DIR/bash_funcs"
   case "$1" in
     --func ) shift; "$@"; return $?;;
+    --prescan ) shift; ain_prescan_tarball_files_list "$@"; return $?;;
   esac
   ain_fallible "$@" || return $?$(
     echo E: "Node.js autoinstaller failed, rv=$?" >&2)
@@ -46,7 +47,20 @@ function ain_fallible () {
   NODEJS_VER="${NODEJS_VER//[^0-9]/}"
   echo ok.
 
+  local UNINSTALL=
+  case "$1" in
+    --recklessly-reinstall | \
+    --recklessly-uninstall )
+      UNINSTALL="${1#*y-}"
+      UNINSTALL="${UNINSTALL%in*}"
+      shift;;
+  esac
+
   local UNPACK_TMPPFX="${1:-tmp.unpack.}"; shift
+
+  [ "$#" == 0 ] || return 4$(
+    echo -n E: "unexpected additional CLI arguments (n=$#):" >&2
+    printf -- ' ‹%s›' "$@" >&2; echo >&2)
 
   [ -n "$TARBALL_BFN" ] || ain_obtain_tarball || return $?
   local TARBALL_ABS="$TARBALLS_DIR$TARBALL_BFN"
@@ -70,7 +84,15 @@ function ain_checkarg_dirpath () {
 
 
 function ain_prescan_tarball_files_list () {
+  case "$1" in
+    '' ) ;;
+    *.tar.[a-z][a-z] | \
+    *.tar ) ain_autodecompress_file "$1" | tar t | "$FUNCNAME"; return $?;;
+    *.lst | \
+    *.txt ) cat "$1" | "$FUNCNAME"; return $?;;
+  esac
   local RGX='^/?node-v[\w\.\-]+/(
+    bin|
     include|
     lib/\w+|
     share/doc|
@@ -102,9 +124,7 @@ function ain_obtain_tarball () {
     [ -f "$TARBALLS_DIR$BFN" ] || continue
     VER="${BFN##*node-v}"
     VER="${VER%%-linux-*}"
-    VER="${VER%.*}"
-    VER="${VER%.*}"
-    VER="${VER%.*}"
+    VER="${VER%%.*}"
     [ -z "${VER//[0-9]/}" ] || continue$(
       echo W: "Skip tarball with non-digit in major version: '$BFN'" >&2)
     [ "$DBGLV" -lt 4 ] || echo D: 'checking tarball:' \
@@ -170,17 +190,22 @@ function ain_obtain_tarball () {
 }
 
 
+function ain_autodecompress_file () {
+  local SRC_FN="$1"; shift
+  local PIPE=
+  case "$SRC_FN" in
+    *.xz ) PIPE='| unxz';;
+    *.gz ) PIPE='| gzip -d';;
+  esac
+  eval 'pv -- "$SRC_FN"'"$PIPE"
+}
+
+
 function ain_unpack_tarball () {
   local TARBALL_ABS="$1"; shift
   echo D: "Detecting wrapper directory name in tarball: $TARBALL_ABS"
-  local UNPACK_CMD='cat'
-  case "$TARBALL_BFN" in
-    *.xz ) UNPACK_CMD='unxz';;
-    *.gz ) UNPACK_CMD='gzip -d';;
-  esac
-  local EXTRACT=( "$($UNPACK_CMD <"$TARBALL_ABS" | tar t |
-    ain_prescan_tarball_files_list)" )
-  local TAR_PFX="${EXTRACT[0]#/}"
+  local EXTRACT_THESE_FILES="$(ain_prescan_tarball_files_list "$TARBALL_ABS")"
+  local TAR_PFX="${EXTRACT_THESE_FILES#/}"
   TAR_PFX="${TAR_PFX%%/*}"
   case "$TAR_PFX" in
     *$'\n'* ) echo E: "A string operation failed for TAR_PFX."; return 4;;
@@ -196,7 +221,7 @@ function ain_unpack_tarball () {
   local VAL= AUX= PAR=
   VAL="$VER_DIR"
   [ "${VAL:0:1}" == / ] || VAL="$PWD/$VAL"
-  for VAL in "$VAL" $EXTRACT; do
+  for VAL in "$VAL" $EXTRACT_THESE_FILES; do
     [ "${VAL:0:1}" == / ] || VAL="$DEST_BASE$VAL"
     [ -d "$VAL" ] || continue
     AUX=+
@@ -205,29 +230,27 @@ function ain_unpack_tarball () {
   [ -z "$AUX" ] || return 4$(
     echo E: 'Cannot unpack: Some destination directories already exist.' >&2)
 
-  mkdir -- "$VER_DIR" || return $?
+  case "$UNINSTALL" in
+    un | re ) ain_recklessly_uninstall || return $?;;&
+    re ) ;;
+    un ) return 0;;
+  esac
+
   echo D: "Extract $TARBALL_ABS -> $VER_DIR/."
-  pv "$TARBALL_ABS" | $UNPACK_CMD | tar x -C "$VER_DIR"
+  mkdir -- "$VER_DIR" || return $?
+  ain_autodecompress_file "$TARBALL_ABS" | tar x -C "$VER_DIR"
 
   echo -n D: "Move files from $VER_DIR/ -> $DEST_BASE: "
   local VER_PFX="$VER_DIR/$TAR_PFX"
-  VAL="${EXTRACT[0]}"
-  EXTRACT=()
-  IFS= readarray -t EXTRACT <<<"$VAL" || return $?
-  for VAL in "${EXTRACT[@]}"; do
+  for VAL in $EXTRACT_THESE_FILES; do
     VAL="${VAL#*/}"
     PAR="$DEST_BASE$(dirname -- "$VAL")"
     mkdir -p -- "$PAR"
     mv -t "$PAR"/ -- "$VER_PFX/$VAL" || return $?
-    rmdir --ignore-fail-on-non-empty -p -- "$VER_PFX/$(
-      dirname -- "$VAL")"
+    rmdir --ignore-fail-on-non-empty -p -- "$VER_PFX/$(dirname -- "$VAL")"
   done
 
-  echo -n "bin… "
   local DEST_BIN="$DEST_BASE"bin
-  mkdir -p -- "$DEST_BIN"
-  mv -t "$DEST_BIN" -- "$VER_PFX"/bin/* || return $?
-  rmdir -- "$VER_PFX"/bin || return $?
   ln -sfT node "$DEST_BIN"/nodejs || return $?
 
   VAL='share/doc/node'
@@ -240,7 +263,13 @@ function ain_unpack_tarball () {
   echo -n "$VAL… "
   VAL="$VER_PFX/$VAL"
   rm -- "$VAL"/man*/node.* || return $?
-  rmdir -p -- "$VAL"/man* || return $?
+  rmdir -- "$VAL"/man* || return $?
+  rmdir -- "$VAL" || return $?
+  rmdir -- "$VER_PFX/share" || return $?
+  rmdir -- "$VER_PFX" || return $?
+  rmdir -- "$VER_DIR"
+  # ^-- We can't use `rmdir -p` because $UNPACK_TMPPFX may include a prefix
+  #     not meant to be deleted.
 
   if [ -d "$VER_DIR" ]; then
     ls -Al -- "$VER_DIR"
@@ -272,6 +301,24 @@ function ain_versions_check () {
   [ -n "$FAILS" ] || return 0
   echo E: "Failed to detect the versions of:${FAILS#,}" >&2
   return 2
+}
+
+
+function ain_recklessly_uninstall () {
+  local VAL=
+  for VAL in $EXTRACT_THESE_FILES; do
+    VAL="${VAL#$TAR_PFX/}"
+    [ -n "$VAL" ] || continue
+    VAL="${DEST_BASE%/}/$VAL"
+    echo -n D: "uninstall: $VAL: "
+    if [ ! -e "$VAL" ]; then
+      echo 'not found. skip.'
+      continue
+    fi
+    rm -r -- "$VAL"
+    [ ! -e "$VAL" ] || return 4$(echo E: 'Failed to rm.' >&2)
+    echo 'removed.'
+  done
 }
 
 
