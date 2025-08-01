@@ -30,10 +30,28 @@ function gather_ci_run_meta () {
 }
 
 
+function gather_ci_run_meta__wget () {
+  local SAVE="$1"; shift
+  local WGET=(
+    wget
+    --quiet
+
+    --tries=1
+    --timeout=10
+    # ^-- We can expect the GitHub API to be really quick for the types
+    #   of requests we're doing. If it hangs, it's probably an outage,
+    #   and thus no use in wasting the user's time.
+
+    --output-document="$SAVE"
+    )
+  "${WGET[@]}" "$@"; return $?
+}
+
+
 function gather_ci_run_meta__fallible () {
   local ATTEMPT_URL="https://api.github.com/repos/$GITHUB_REPOSITORY$(
     )/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
-  wget --quiet --output-document="$ATTEMPT_META" -- "$ATTEMPT_URL" \
+  gather_ci_run_meta__wget "$ATTEMPT_META" -- "$ATTEMPT_URL" \
     || return $?$(echo E: "Failed to download $ATTEMPT_URL" >&2)
   # FMT=json ghciu_stepsumm_dump_file "$ATTEMPT_META" --count-lines
 
@@ -45,7 +63,7 @@ function gather_ci_run_meta__fallible () {
     )/commits/$GITHUB_SHA/check-suites"
   local SUITE_URL="https://api.github.com/repos/$GITHUB_REPOSITORY$(
     )/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
-  wget --quiet --output-document="$SUITE_META" -- "$SUITE_URL" \
+  gather_ci_run_meta__wget "$SUITE_META" -- "$SUITE_URL" \
     || return $?$(echo E: "Failed to download $SUITE_URL" >&2)
   # FMT=json ghciu_stepsumm_dump_file "$SUITE_META" --count-lines
 
@@ -58,12 +76,16 @@ function gather_ci_run_meta__fallible () {
   # local RAW_LOG_URL="$(jq --raw-output .logs_url -- "$ATTEMPT_META")"
   # ^-- Useless in a browser: Access will be denied without token header.
   local CI_JOB_ID=
-  local RAW_LOG_URL='#no_job_id_detected'
+  local RAW_LOG_URL=
   gather_ci_run_meta__detect_job_id || true
-  echo '<a href="'"$RAW_LOG_URL"'"><img src="about:blank" align="right"' \
-    'alt="&#x1F4DC;"></a>' >>"$GITHUB_STEP_SUMMARY"
+  local LOG_LINK='&#x1F4DC;' # scroll
+  [ -n "$RAW_LOG_URL" ] || LOG_LINK="&#x26CD;" # disabled car
+  LOG_LINK='<a href="'"${RAW_LOG_URL:-#no_job_id_detected}"'"><img '$(
+    )'src="about:blank" align="right" alt="'"$LOG_LINK"'"></a>'
+  [ -n "$RAW_LOG_URL" ] || LOG_LINK="<del>$LOG_LINK</del>"
   # ^-- We have to abuse ancient img align because GitHub's HTML sanitization
   #     will eat any modern solution.
+  echo "$LOG_LINK" >>"$GITHUB_STEP_SUMMARY"
 
   printf -- '%s=%q\n' \
     GHCIU_WORKFLOW_BASENAME "$WF_BN" \
@@ -80,7 +102,7 @@ function gather_ci_run_meta__detect_job_id () {
   local CI_RUN_URL="https://github.com/$GITHUB_REPOSITORY/$(
     )actions/runs/$ATTEMPT_ID"
   [ -s "$CI_RUN_HTML_ORIG" ] \
-    || wget --quiet --output-document="$CI_RUN_HTML_ORIG" -- "$CI_RUN_URL" \
+    || gather_ci_run_meta__wget "$CI_RUN_HTML_ORIG" -- "$CI_RUN_URL" \
     || return $?$(echo E: "Failed to download $CI_RUN_URL" >&2)
 
   <"$CI_RUN_HTML_ORIG" tr -s '\r\n \t' ' ' >"$CI_RUN_HTML_NORMSP" || return $?
