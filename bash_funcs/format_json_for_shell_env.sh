@@ -14,6 +14,11 @@ function format_json_for_shell_env () {
       --ghenv ) CFG[wrap_val]=; CFG[out_file]="$GITHUB_ENV";;
       --ghout ) CFG[wrap_val]=; CFG[out_file]="$GITHUB_OUTPUT";;
       -* ) echo E: $FUNCNAME: "Unsupported option: $1" >&2; return 4;;
+      *[^A-Za-z0-9_=]* | *=*=* )
+        echo E: $FUNCNAME: >&2 \
+          'The name of the environment variable to be written' \
+          'must contain only letters, digits and underscore (_).'
+        return 6;;
       * )
         OPT="${ARG%=*}"
         ARG="${ARG##*=}"
