@@ -11,11 +11,29 @@ function fmt_markdown_textblock () {
 
 function fmt_markdown_textblock__core () {
   echo
-  echo '```'"${FMT:-text}"
+  case "$FMT" in
+    inline ) ;;
+    h[1-6] ) # initial headline
+      FMT+='######'
+      echo -n "${FMT:2:${FMT:1:1}} "
+      FMT='inline';;
+    * ) echo '```'"${FMT:-text}";;
+  esac
   sed -re 's~^\x60~\&#x60;~g;s~^<~\&lt;~g'
-  echo '```'
+  [ "$FMT" == inline ] || echo '```'
   # echo; echo "trace:$(printf -- ' &larr; `%s`' "${FUNCNAME[@]}")"
   echo
+}
+
+
+function fmt_markdown_textblock__deco () {
+  [ -n "$FMT" ] || local FMT=inline
+  local DECO="$1"; shift
+  case "$DECO" in
+    --volcano ) DECO='&#x1F525;&#x1F30B;&#x1F525;';;
+  esac
+  local MSG="$DECO $* $DECO"
+  <<<"$MSG" fmt_markdown_textblock__core
 }
 
 
