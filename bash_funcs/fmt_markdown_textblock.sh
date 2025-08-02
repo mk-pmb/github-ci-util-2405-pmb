@@ -63,6 +63,7 @@ function fmt_markdown_textblock__details_file () {
       -- ) break;;
       --title ) TITLE="$1"; shift;;
       --basename ) TITLE="$(basename -- "$TITLE")";;
+      --open ) TITLE="<open>${TITLE#<open>}";;
       --count-lines | \
       -- ) "$FUNCNAME${ARG//-/_}" "$@" || return $?;;
       * ) echo E: $FUNCNAME: "Unsupported option: $ARG" >&2; return 4;;
@@ -84,7 +85,10 @@ function fmt_markdown_textblock__details_file__count_lines () {
 
 function fmt_markdown_textblock__details () {
   echo
-  echo "<details><summary>$1</summary>"
+  case "$1" in
+    '<open>'* ) echo "<details open><summary>${1#*>}</summary>";;
+    * ) echo "<details><summary>$1</summary>";;
+  esac
   shift
   fmt_markdown_textblock "$@"
   local RV=$?
