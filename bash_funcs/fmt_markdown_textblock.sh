@@ -43,6 +43,12 @@ function ghciu_stepsumm_dump_file () {
 
 function fmt_markdown_textblock__details_file () {
   local FILE="$1"; shift
+  case "$FILE" in
+    *' '* )
+      echo W: $FUNCNAME: "Filename contains unusual characters." \
+        "If you meant to use options (e.g. --title)," \
+        "they have to go _after_ the filename!" >&2;;
+  esac
   [ "${FILE:0:1}" != - ] || return 4$(echo E: $FUNCNAME: >&2 \
     "File name must not start with '-' (consider './-…'): $FILE")
   [ -f "$FILE" ] || return 4$(echo E: $FUNCNAME: >&2 \
