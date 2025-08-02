@@ -36,6 +36,7 @@ function fmt_markdown_textblock__core () {
 
 
 function fmt_markdown_textblock__deco () {
+  # e.g. FMT=h2 fmt_markdown_textblock stepsumm deco --volcano 'Build failed!'
   [ -n "$FMT" ] || local FMT=inline
   local DECO="$1"; shift
   case "$DECO" in
@@ -52,6 +53,7 @@ function fmt_markdown_textblock__capture_command () {
 
 
 function fmt_markdown_textblock__stepsumm () {
+  # <<<"$MSG" fmt_markdown_textblock stepsumm
   [ -n "$GITHUB_STEP_SUMMARY" ] || return 0
   fmt_markdown_textblock "$@" >>"$GITHUB_STEP_SUMMARY" || return $?
   ghciu_ensure_stepsumm_size_limit || return $?
@@ -59,6 +61,7 @@ function fmt_markdown_textblock__stepsumm () {
 
 
 function ghciu_stepsumm_dump_textblock () {
+  # Deprecated. Use "fmt_markdown_textblock stepsumm …" instead.
   fmt_markdown_textblock stepsumm "$@"; return $?
 }
 
