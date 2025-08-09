@@ -91,18 +91,7 @@ function ghciu_cli_main () {
   elif [[ "$CI_LOG" == /dev/* ]]; then
     true
   elif [ -f "$CI_LOG" ]; then
-    FMT=h2 fmt_markdown_textblock stepsumm deco --volcano "$FAIL_REPORT"
-    if [ -s "$CI_LOG" ]; then
-      # v-- The `uniq` is to tame node.js's `CallSite {},` spam.
-      tail --bytes=4K -- "$CI_LOG" | uniq |
-        "$GHCIU_DIR"/util/common_logfile_optimizations/optim.sh |
-        uniq | tail --lines=30 |
-        ghciu_stepsumm_dump_textblock details '<open>Latest CI log messages'
-        # ^-- implies ghciu_ensure_stepsumm_size_limit
-    else
-      echo "ghciu: Empty CI log albeit task failed (rv=$RV): \`$CI_LOG\`" \
-        >>"$GITHUB_STEP_SUMMARY"
-    fi
+    ci_fail_log_summary
   fi
 
   return "$RV"
