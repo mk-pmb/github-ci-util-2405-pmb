@@ -3,6 +3,7 @@
 
 function install_globally () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
+  local INIT_PWD="$PWD"
   local SELFPATH="$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")" # busybox
   local GLOBAL_BIN_PATH='/usr/local/bin'
   optimize_global_bin_path || return $?
@@ -19,7 +20,21 @@ function install_globally () {
   cd -- "$SELFPATH" || return $?
   cp -vT -- act/install/npmrc.basics.ini "$HOME"/.npmrc || return $?
   ensure_nodejs_symlink || return $?
-  npm install . || return $?
+
+  echo "===>>=== audit-ci: Check ghciu itself. ===>>==="
+  IBM_AUDIT_CI_CFG= "$SELFPATH"/util/ibm-audit-ci.sh || return $?
+  echo "===<<=== audit-ci: Check ghciu itself. ===<<==="
+
+  npm install . || return $?$(echo E: "Failed to npm install ghciu! rv=$?" >&2)
+
+  [ . -ef "$INIT_PWD" ] && return 0
+  cd -- "$INIT_PWD" || return $?$(
+    echo E: 'Failed to chdir back to the workspace directory!' >&2)
+  echo "==---== Default workspace checks and optimizations ==---=="
+
+  echo "===>>=== audit-ci: Check the workspace directory. ===>>==="
+  "$SELFPATH"/util/ibm-audit-ci.sh || return $?
+  echo "===<<=== audit-ci: Check the workspace directory. ===<<==="
 }
 
 
@@ -42,6 +57,22 @@ function ensure_nodejs_symlink () {
   ln -vsT -- "$NODE" "$NJS" || return $?$(
     echo E: $FUNCNAME: "Cannot symlink node.js as nodejs!" >&2)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 install_globally "$@"; exit $?
