@@ -4,6 +4,9 @@
 
 function gather_ci_run_meta () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
+  local SELFPATH="$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")" # busybox
+  source -- "$SELFPATH"/lib_report.sh --lib || return $?
+
   local ATTEMPT_META='tmp.ci-attempt-meta.json'
   local SUITE_META='tmp.check-suite-meta.json'
   local CI_RUN_HTML_ORIG='tmp.check-suite-meta.html'
@@ -13,7 +16,7 @@ function gather_ci_run_meta () {
   [ -n "$GITHUB_REPOSITORY" ] || return 4$(
     echo E: 'Empty GITHUB_REPOSITORY!' >&2)
 
-  wget --version >/dev/null || gather_ci_run_meta__panic 'No wget!'
+  wget --version >/dev/null || lib_report__panic 'No wget!'
 
   case "$1" in
     '' ) ;;
@@ -29,17 +32,6 @@ function gather_ci_run_meta () {
     "Gathering meta data failed. The API may have changed in a way that" \
     "ghciu is not compatible with yet. Maybe you need to update it," \
     "or run a newer version of its install action.")
-}
-
-
-function gather_ci_run_meta__panic () {
-  echo '!! 🔥🌋🔥 !! PANIC !! 🔥🌋🔥 !! 🔥🌋🔥 !! 🔥🌋🔥 !! 🔥🌋🔥 !! 🔥🌋🔥 !!'
-  echo "!! $*"
-  echo '!! 🔥🌋🔥 !! PANIC !! 🔥🌋🔥 !! 🔥🌋🔥 !! 🔥🌋🔥 !! 🔥🌋🔥 !! 🔥🌋🔥 !!'
-  echo '!!'
-  env | grep -Pie 'github|container|runtime' \
-    | LANG=C sort | sed -re 's!^([^=]+)=!\1:\n\1=!'
-  exit 8
 }
 
 
