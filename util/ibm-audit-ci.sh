@@ -5,11 +5,14 @@
 function ibm_audit_ci_cli_init () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
   local SELFPATH="$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")" # busybox
-  local KEY= VAL=
+  source -- "$SELFPATH"/../act/install/lib_report.sh --lib || return $?
 
   [ -n "$CI" ] || return 0$(
     echo W: "Skipping audit-ci because env var CI is empty!" >&2)
 
+  local KEY= VAL=
+  local FLAGS=",${IBM_AUDIT_CI_FLAGS// /,},"
+  local AC_APPNAME='IBM audit-ci'
   local AC_MINVER=7
   local AC_VER="$GHCIU_AUDIT_CI_VER"
   [ "${AC_VER:-0}" -ge "$AC_MINVER" ] || AC_VER="$AC_MINVER"
@@ -39,10 +42,27 @@ function ibm_audit_ci_cli_init () {
     --package-manager "$PKG_MGR"
     )
 
-  echo D: "Running IBM audit-ci in '$PWD' with config '$AC_CFG'."
-  npx 'audit-ci@^'"$AC_VER" "${AC_OPT[@]}" ||
-    return $?$(echo E: "IBM audit-ci failed in '$PWD'! rv=$?" >&2)
-  echo D: "IBM audit-ci passed in '$PWD'."
+  local BADGE=(
+    lib_report__link_badge
+    {error_,}title="audit-ci: ${PWD##*/}"
+    icon=%shield
+    error_icon=%emergency
+    error_name=audit-ci
+    )
+
+  echo D: "Running $AC_APPNAME in '$PWD' with config '$AC_CFG'."
+  if npx 'audit-ci@^'"$AC_VER" "${AC_OPT[@]}"; then
+    case "$FLAGS" in
+      *,no_success_badge,* ) ;;
+      * ) "${BADGE[@]}" url=: >/dev/null;;
+    esac
+    echo D: "$AC_APPNAME passed in '$PWD'."
+    return 0
+  fi
+
+  "${BADGE[@]}" >/dev/null
+  echo E: "$AC_APPNAME failed in '$PWD'!" >&2
+  return 8
 }
 
 

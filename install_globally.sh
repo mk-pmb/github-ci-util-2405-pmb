@@ -22,7 +22,8 @@ function install_globally () {
   ensure_nodejs_symlink || return $?
 
   echo "===>>=== audit-ci: Check ghciu itself. ===>>==="
-  IBM_AUDIT_CI_CFG= "$SELFPATH"/util/ibm-audit-ci.sh || return $?
+  IBM_AUDIT_CI_CFG= IBM_AUDIT_CI_FLAGS='no_success_badge' \
+    "$SELFPATH"/util/ibm-audit-ci.sh || return $?
   echo "===<<=== audit-ci: Check ghciu itself. ===<<==="
 
   npm install . || return $?$(echo E: "Failed to npm install ghciu! rv=$?" >&2)
