@@ -83,14 +83,9 @@ function gather_ci_run_meta__fallible () {
   local CI_JOB_ID=
   local RAW_LOG_URL=
   gather_ci_run_meta__detect_job_id || true
-  local LOG_LINK='&#x1F4DC;' # scroll
-  [ -n "$RAW_LOG_URL" ] || LOG_LINK="&#x26CD;" # disabled car
-  LOG_LINK='<a href="'"${RAW_LOG_URL:-#no_job_id_detected}"'"><img '$(
-    )'src="about:blank" align="right" alt="'"$LOG_LINK"'"></a>'
-  [ -n "$RAW_LOG_URL" ] || LOG_LINK="<del>$LOG_LINK</del>"
-  # ^-- We have to abuse ancient img align because GitHub's HTML sanitization
-  #     will eat any modern solution.
-  echo "$LOG_LINK" >>"$GITHUB_STEP_SUMMARY"
+
+  lib_report__link_badge "url=$RAW_LOG_URL" 'icon=%scroll' \
+    'error_name=no_job_id_detected'
 
   printf -- '%s=%q\n' \
     GHCIU_WORKFLOW_BASENAME "$WF_BN" \
