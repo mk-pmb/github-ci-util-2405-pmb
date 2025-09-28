@@ -117,7 +117,7 @@ function ghciu_repo_unpacker__maybe_npm_install () {
   [ -f package.json ] || return 0
   which npm | grep -qPe '^/' || return 0
   echo D: 'Install (npm):'
-  npm install . || return $?
+  npm install --ignore-scripts=true . || return $?
 }
 
 
