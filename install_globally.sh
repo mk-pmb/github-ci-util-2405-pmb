@@ -26,7 +26,8 @@ function install_globally () {
     "$SELFPATH"/util/ibm-audit-ci.sh || return $?
   echo "===<<=== audit-ci: Check ghciu itself. ===<<==="
 
-  npm install . || return $?$(echo E: "Failed to npm install ghciu! rv=$?" >&2)
+  npm install --ignore-scripts=true . || return $?$(
+    echo E: "Failed to npm install ghciu! rv=$?" >&2)
 
   [ . -ef "$INIT_PWD" ] && return 0
   cd -- "$INIT_PWD" || return $?$(
