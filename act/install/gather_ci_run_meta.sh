@@ -15,6 +15,7 @@ function gather_ci_run_meta () {
   local JOB_NAME_LINKS='tmp.job-name-link-urls.txt'
   [ -n "$GITHUB_REPOSITORY" ] || return 4$(
     echo E: 'Empty GITHUB_REPOSITORY!' >&2)
+  local REPO_URL="https://github.com/$GITHUB_REPOSITORY"
 
   wget --version >/dev/null || lib_report__panic 'No wget!'
 
@@ -99,8 +100,7 @@ function gather_ci_run_meta__fallible () {
 function gather_ci_run_meta__detect_job_id () {
   value_mustbe_simple_integer 'E: Unable to determine attempt ID:' \
     "$ATTEMPT_ID" ge:1 || return $?
-  local CI_RUN_URL="https://github.com/$GITHUB_REPOSITORY/$(
-    )actions/runs/$ATTEMPT_ID"
+  local CI_RUN_URL="$REPO_URL/actions/runs/$ATTEMPT_ID"
   [ -s "$CI_RUN_HTML_ORIG" ] \
     || gather_ci_run_meta__wget "$CI_RUN_HTML_ORIG" -- "$CI_RUN_URL" \
     || return $?$(echo E: "Failed to download $CI_RUN_URL" >&2)
@@ -124,8 +124,7 @@ function gather_ci_run_meta__detect_job_id () {
   CI_JOB_ID="${CI_JOB_ID##*>>}"
   local E='E: Unable to determine CI job ID:'
   if value_mustbe_simple_integer "$E" "$CI_JOB_ID" ge:1; then
-    RAW_LOG_URL="https://github.com/$GITHUB_REPOSITORY/commit/$(
-      )$GITHUB_SHA/checks/$CI_JOB_ID/logs"
+    RAW_LOG_URL="$REPO_URL/commit/$GITHUB_SHA/checks/$CI_JOB_ID/logs"
   else
     # ghciu_stepsumm_dump_file "$JOBS_MENU_HTML"
     # ghciu_stepsumm_dump_file "$JOB_NAME_LINKS"
