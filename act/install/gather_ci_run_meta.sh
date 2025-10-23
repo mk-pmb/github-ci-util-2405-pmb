@@ -88,6 +88,10 @@ function gather_ci_run_meta__fallible () {
   lib_report__link_badge "url=$RAW_LOG_URL" 'icon=%scroll' \
     'error_name=no_job_id_detected'
 
+  local RLS_TAG="$GHCIU_STEPSUMM_RELEASE_TAG"
+  [ -z "$RLS_TAG" ] || lib_report__link_badge \
+    "url=$REPO_URL/releases/tag/$RLS_TAG" 'icon=%package'
+
   printf -- '%s=%q\n' \
     GHCIU_WORKFLOW_BASENAME "$WF_BN" \
     GHCIU_ATTEMPT_ID "$ATTEMPT_ID" \
