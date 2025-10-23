@@ -20,14 +20,22 @@ function fmt_markdown_textblock__core () {
     * ) echo '```'"${FMT:-text}";;
   esac
 
+  local SED_OPTIM='
+    # Strip terminal color codes:
+    s~\x1b\[[0-9;]*m~~g
+    s~\x1b\[K~~g
+    '
+
   # How can we escape "`" and "<" characters at the start of a line for
   # GitHub-flavored markdown?
   # I tried a preceeding backslash, it will be printed verbatim.
-  # LANG=C sed -re 's~^\x60~\&#96;~g;s~^<~\&lt;~g'
+  # SED_OPTIM+=$'\n''s~^\x60~\&#96;~g;s~^<~\&lt;~g'
   # I tried HTML entities, they will be printed verbatim.
-  # LANG=C sed -re 's~^\x60|^<~\\&~g'
+  # SED_OPTIM+=$'\n''s~^\x60|^<~\\&~g'
   # I tried a zero-width non-joiner, … it's invisible at least.
-  LANG=C sed -re 's~^\x60|^<~\xE2\x80\x8C&~g'
+  SED_OPTIM+=$'\n''s~^\x60|^<~\xE2\x80\x8C&~g'
+
+  LANG=C sed -re "$SED_OPTIM"
 
   [ "$FMT" == inline ] || echo '```'
   # echo; echo "trace:$(printf -- ' &larr; `%s`' "${FUNCNAME[@]}")"
