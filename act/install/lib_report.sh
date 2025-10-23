@@ -30,6 +30,7 @@ function lib_report__link_badge () {
   case "${BADGE[icon]}" in
     %disabled_car ) BADGE[icon]='&#x26CD;';;
     %emergency ) BADGE[icon]='&#x1F6A8;';;
+    %package ) BADGE[icon]='&#x1F4E6;';;
     %scroll ) BADGE[icon]='&#x1F4DC;';;
     %shield ) BADGE[icon]='&#x1F6E1;&#xFE0F;';;
   esac

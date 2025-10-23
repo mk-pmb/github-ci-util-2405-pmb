@@ -11,9 +11,18 @@ on:
     branches:
       - '*'
 
+env:
+  GHCIU_STEPSUMM_RELEASE_TAG: 'rolling/auto-ci-release'
+  # ^-- When set, the install action generates a release badge link.
+
+
 jobs:
   job_ci:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # required for publishing a release.
+
     steps:
       - uses: actions/checkout@v4
 
@@ -28,6 +37,29 @@ jobs:
 
       - run: ghciu vdo date -R
       - run: ghciu vdo megafail || true
+
+      - name: 'Add debug files to auto-release'
+        if: always()
+        run: >
+          mkdir --parents -- tmp.release &&
+          zip -qr9 tmp.release/debug_node_modules.zip --
+          node_modules/
+          package.json
+          package-lock.json
+
+      - name: 'Publish auto-release'
+        if: always()
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: True
+          artifactErrorsFailBuild: True
+          artifacts: 'tmp.release/*'
+          body: ''
+          makeLatest: False
+          prerelease: True
+          removeArtifacts: True # Remove old files from release.
+          commit: '${{ github.sha }}'
+          tag: '${{ env.GHCIU_STEPSUMM_RELEASE_TAG }}'
 
 
   wipe_old_workflows:
