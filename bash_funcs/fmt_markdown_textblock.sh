@@ -136,6 +136,13 @@ function fmt_markdown_textblock__details_file__count_lines () {
 }
 
 
+function fmt_markdown_textblock__dump_ghoutput () {
+  fmt_markdown_textblock__details_file "$GITHUB_OUTPUT" \
+    --title 'GitHub step output variables' \
+    "$@"
+}
+
+
 function ghciu_ensure_stepsumm_size_limit () {
   [ -n "$GITHUB_STEP_SUMMARY" ] || return 0
   local SZ="$(stat -c %s -- "$GITHUB_STEP_SUMMARY")"
