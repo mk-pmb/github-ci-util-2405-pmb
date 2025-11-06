@@ -6,17 +6,35 @@ function ghciu_cli_main () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
   local DBGLV="${DEBUGLEVEL:-0}"
   local GHCIU_DIR="$(readlink -m -- "$BASH_SOURCE"/..)"
-  local CI_INVOKED_IN="$PWD"
   local CI_FUNCD="$GHCIU_DIR/bash_funcs"
-  local CI_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-  case "$1" in
-    --print-ghciu-dir ) echo "$GHCIU_DIR"; return $?;;
-    --print-funcs-dir ) echo "$CI_FUNCD"; return $?;;
-  esac
-
   local -A CFG=() MEM=( [start_uts]="$EPOCHSECONDS" )
   CFG[task_done_report_file]='/dev/stdout'
   source -- "$CI_FUNCD"/ci_cli_init.sh || return $?
+
+  local CI_PROJECT_DIR=
+  local KEY= VAL=
+  while [ -n "$1" ]; do
+    VAL="${1#*=}"
+    case "$1=" in
+      --proj-dir=* ) CI_PROJECT_DIR="$VAL";;
+      --chdir=* ) cd -- "${VAL:-.}" || return $?;;
+      * ) break;;
+    esac
+    # Only complain about missing value once we're sure it's one of the
+    # options matched above:
+    [ -n "$VAL" ] || return 4$(echo E: "Empty value for ption ${1%%=*}!" >&2)
+    shift
+  done
+  CI_PROJECT_DIR="$(cd -- "${CI_PROJECT_DIR:-.}" && (
+    git rev-parse --show-toplevel 2>/dev/null || pwd) )"
+  local CI_INVOKED_IN="$PWD"
+
+  case "$1" in
+    --print-funcs-dir ) echo "$CI_FUNCD"; return $?;;
+    --print-ghciu-dir ) echo "$GHCIU_DIR"; return $?;;
+    --print-proj-dir ) echo "$CI_PROJECT_DIR"; return $?;;
+  esac
+
   source_these_files --lib "$CI_FUNCD"/*.sh || return $?
   source_additional_bash_funcs_files --had="$GHCIU_DIR" \
     "$CI_PROJECT_DIR" \
@@ -36,6 +54,7 @@ function ghciu_cli_main () {
     shift
   fi
 
+  [ "$1" != -- ] || shift
   local CI_TASK="$1"; shift
   [ -n "$CI_TASK" ] || CI_TASK="${CFG[default_task]}"
   [ -n "$CI_TASK" ] || CI_TASK='default_task'
