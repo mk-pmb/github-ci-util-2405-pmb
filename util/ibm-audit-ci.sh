@@ -2,14 +2,30 @@
 # -*- coding: utf-8, tab-width: 2 -*-
 
 
-function ibm_audit_ci_cli_init () {
+function ibm_audit_ci__cli_init () {
   export LANG{,UAGE}=en_US.UTF-8  # make error messages search engine-friendly
-  local SELFPATH="$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")" # busybox
-  source -- "$SELFPATH"/../act/install/lib_report.sh --lib || return $?
+  local GHCIU_DIR="$(readlink -m -- "$BASH_SOURCE"/../..)"
+  source -- "$GHCIU_DIR"/act/install/lib_report.sh --lib || return $?
+  exec </dev/null
 
   [ -n "$CI" ] || return 0$(
     echo W: "Skipping audit-ci because env var CI is empty!" >&2)
 
+  cd -- "$GHCIU_DIR" || return $?
+  local LOGF="tmp.ibm-audit-ci.$(printf -- '%(%y%m%d-%H%M%S)T' -1).$$.log"
+  >"$LOGF" || return $?
+  exec &> >(tee -- "$LOGF")
+  exec 7<"$LOGF"
+  rm -- "$LOGF"
+  ibm_audit_ci__fallible "$@" && return 0
+  local RV=$?
+  "$GHCIU_DIR"/bash_funcs/fmt_markdown_textblock.sh stepsumm \
+    details_file "$LOGF" --title 'Audit CI Log'
+  return $RV
+}
+
+
+function ibm_audit_ci__fallible () {
   local KEY= VAL=
   local FLAGS=",${IBM_AUDIT_CI_FLAGS// /,},"
   local AC_APPNAME='IBM audit-ci'
@@ -22,7 +38,7 @@ function ibm_audit_ci_cli_init () {
     grep -HFe '"$schema":' -- *audit-ci*.*son* 2>/dev/null |
       grep -Fe '"https://github.com/IBM/audit-ci/raw/main/docs/schema.json"' |
       tr '$:' '\t' | cut -sf 1)"
-  [ -f "$AC_CFG" ] || AC_CFG="$SELFPATH/ibm-audit-ci.ceson"
+  [ -f "$AC_CFG" ] || AC_CFG="$GHCIU_DIR/util/ibm-audit-ci.ceson"
 
   local PKG_MGR='npm'
   # … except if we find files that audit-ci can use to auto-detect PKG_MGR:
@@ -74,4 +90,4 @@ function ibm_audit_ci_cli_init () {
 
 
 
-ibm_audit_ci_cli_init "$@"; exit $?
+ibm_audit_ci__cli_init "$@"; exit $?
