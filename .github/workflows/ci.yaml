@@ -24,7 +24,7 @@ jobs:
       contents: write   # required for publishing a release.
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       ########################################################################
       # Branch selection in the "uses" task

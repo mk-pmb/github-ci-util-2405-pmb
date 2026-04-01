@@ -20,7 +20,7 @@ inputs:
   nodejs_version:
     description: 'Which node.js to install. Major version only, as a number, 0 = skip.'
     required: false
-    default: 20
+    default: 24
 
   npm_version:
     description: 'Whether to install a specific npm version.'
@@ -32,7 +32,7 @@ runs:
   steps:
 
     - name: 'Install Node.js ${{ inputs.nodejs_version }}'
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       if: '${{ inputs.nodejs_version > 0 }}'
       with:
         node-version: '${{ inputs.nodejs_version }}.x'
