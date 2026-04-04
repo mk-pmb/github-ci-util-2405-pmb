@@ -78,23 +78,17 @@ function source_available_rc_files () {
 }
 
 
-function ghciu_decide_logfile_name () {
-  local TOPIC="$1"
-  case "$TOPIC" in
-    '' ) TOPIC='no_logfile_topic_given';;
-    *.pl | \
-    *.py | \
-    *.sed | \
-    *.sh | \
-    '' ) TOPIC="$(basename -- "${TOPIC%.*}")";;
-  esac
-
-  local SITE= LOGDIR=
+function ghciu_decide_logs_dir () {
+  local LOGSDIR="${CFG[logsdir]}"
+  [ -n "$LOGSDIR" ] || [ -z "$CI_LOG" ] || LOGSDIR="$(dirname -- "$CI_LOG")"
+  CFG[logsdir]="$LOGSDIR"
+  [ -d "$LOGSDIR" ] && return 0 || true
+  local SITE=
   local CANDIDATES=()
   for SITE in "@$HOSTNAME" local; do
-    for LOGDIR in "$CI_INVOKED_IN" "$CI_PROJECT_DIR"; do
-      for LOGDIR in "$LOGDIR"/{.ghciu/,,tmp.}logs."$SITE"; do
-        CANDIDATES+=( "$LOGDIR" )
+    for LOGSDIR in "$CI_INVOKED_IN" "$CI_PROJECT_DIR"; do
+      for LOGSDIR in "$LOGSDIR"/{.ghciu/,,tmp.}logs."$SITE"; do
+        CANDIDATES+=( "$LOGSDIR" )
       done
     done
   done
@@ -106,8 +100,23 @@ function ghciu_decide_logfile_name () {
   CANDIDATES+=( "$CI_PROJECT_DIR/.ghciu/logs.$SITE" )
   # printf -- 'log? <%s>\n' "${CANDIDATES[@]}" | nl -ba >&2
 
-  for LOGDIR in "${CANDIDATES[@]}"; do [ -d "$LOGDIR" ] && break; done
-  echo "$LOGDIR/$TOPIC.log"
+  for LOGSDIR in "${CANDIDATES[@]}"; do [ -d "$LOGSDIR" ] && break; done
+  mkdir --parents -- "$LOGSDIR" || true
+  CFG[logsdir]="$LOGSDIR"
+}
+
+
+function ghciu_decide_logfile_name () {
+  local TOPIC="$1"
+  case "$TOPIC" in
+    '' ) TOPIC='no_logfile_topic_given';;
+    *.pl | \
+    *.py | \
+    *.sed | \
+    *.sh | \
+    '' ) TOPIC="$(basename -- "${TOPIC%.*}")";;
+  esac
+  echo "${CFG[logsdir]}/$TOPIC.log"
 }
 
 

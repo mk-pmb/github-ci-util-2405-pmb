@@ -53,6 +53,11 @@ function ghciu_cli_main () {
     CFG[task_done_report_file]=/dev/null
     shift
   fi
+  ghciu_decide_logs_dir || return $?$(
+    echo E: 'Failed to decide the directory for log files.' >&2)
+  case "$1" in
+    --print-logs-dir ) echo "${CFG[logsdir]}"; return $?;;
+  esac
 
   [ "$1" != -- ] || shift
   local CI_TASK="$1"; shift
@@ -70,7 +75,7 @@ function ghciu_cli_main () {
   esac
   [ "$(type -t "ghciu_$CI_TASK")" == function ] && CI_TASK="ghciu_$CI_TASK"
 
-  [ -n "$CI_LOG" ] || CI_LOG="$(ghciu_decide_logfile_name "$CI_TASK"
+  CI_LOG="$(ghciu_decide_logfile_name "$CI_TASK"
     )" || return $?$(echo E: "Failed to decide logfile destination!" >&2)
   mkdir --parents -- "$(dirname -- "$CI_LOG")"
   >>"$CI_LOG" || return $?$(echo E: "Cannot write to CI log: $CI_LOG" >&2)
