@@ -40,5 +40,7 @@ runs:
     - name: 'Install CI utils'
       run: '"$GITHUB_ACTION_PATH"/install.sh'
       shell: bash
+      env:
+        WANT_NODEJS_VERSION: '${{ inputs.nodejs_version }}'
 
 ...
