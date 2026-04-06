@@ -39,14 +39,15 @@ function tame_nodejs_error_messages () {
   sed -rf <(echo '
     s~(^|[^A-Za-z0-9_])(/mnt/|/home/)\S+?(/node_modules\b)~\1/…\3~g
 
-    /^ +\[Symbol\((original|mutated)CallSite\)\]: \[/{
+    /^ +(\[?Symbol\((original|mutated)CallSite\)\]?|jse_[a-z]+): \[/{
       : read_callsite_block
-        /\],?$/!N
+        / CallSite/!{N; s~\n\s*~ ~}
+        /CallSite(\[|\]|\(|\)|\{ *\}|,|:| )*$/N
         s~\n *~ ~g
       t read_callsite_block
-      d
+      s~: *\[(,? *CallSite( |\{ *\}|\( *\))*)+\]~:…~g
     }
-    ')
+    ') | sed -zre 's~,\n +jse_[a-z]+: +\{\}~~g'
 }
 
 
