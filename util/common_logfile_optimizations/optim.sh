@@ -7,8 +7,8 @@ function clo_cli_main () {
   local CLO_PATH="$(readlink -m -- "$BASH_SOURCE"/..)"
   cd -- "$CLO_PATH" || return $?
 
-  tame_nodejs_error_messages |
-  clo_file_paths
+  clo_file_paths |
+  tame_nodejs_error_messages
 }
 
 
