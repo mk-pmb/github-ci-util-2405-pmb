@@ -61,6 +61,14 @@ jobs:
           commit: '${{ github.sha }}'
           tag: '${{ env.GHCIU_STEPSUMM_RELEASE_TAG }}'
 
+      - name: 'Pack the ghciu logs as an artifact.'
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ghciu_logs
+          path: .ghciu/logs.local/
+
+
 
   wipe_old_workflows:
     runs-on: ubuntu-latest
