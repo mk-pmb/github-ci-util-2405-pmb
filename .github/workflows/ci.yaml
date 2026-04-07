@@ -39,7 +39,7 @@ jobs:
       - run: ghciu vdo megafail || true
 
       - name: 'Add debug files to auto-release'
-        if: always()
+        if: '!cancelled()'
         run: >
           mkdir --parents -- tmp.release &&
           zip -qr9 tmp.release/debug_node_modules.zip --
@@ -48,7 +48,7 @@ jobs:
           package-lock.json
 
       - name: 'Publish auto-release'
-        if: always()
+        if: '!cancelled()'
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: True
@@ -62,10 +62,10 @@ jobs:
           tag: '${{ env.GHCIU_STEPSUMM_RELEASE_TAG }}'
 
       - name: 'Pack the ghciu logs as an artifact.'
-        if: always()
+        if: '!cancelled()'
         uses: actions/upload-artifact@v6
         with:
-          name: ghciu_logs
+          name: 'ghciu_logs.${{ env.GHCIU_TRACE_JOB }}'
           path: .ghciu/logs.local/
 
 

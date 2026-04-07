@@ -7,12 +7,14 @@ function gather_ci_run_meta () {
   local SELFPATH="$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")" # busybox
   source -- "$SELFPATH"/lib_report.sh --lib || return $?
 
-  local ATTEMPT_META='tmp.ci-attempt-meta.json'
-  local SUITE_META='tmp.check-suite-meta.json'
-  local CI_RUN_HTML_ORIG='tmp.check-suite-meta.html'
-  local CI_RUN_HTML_NORMSP='tmp.check-suite-meta.normsp.html'
-  local JOBS_MENU_HTML='tmp.jobs-menu.html'
-  local JOB_NAME_LINKS='tmp.job-name-link-urls.txt'
+  local META_TMP="${CFG[logsdir]}/$FUNCNAME.$GITHUB_RUN_ATTEMPT"
+  mkdir --parents -- "$META_TMP"
+  local ATTEMPT_META='ci-attempt-meta.json'
+  local SUITE_META='check-suite-meta.json'
+  local CI_RUN_HTML_ORIG='check-suite-meta.html'
+  local CI_RUN_HTML_NORMSP='check-suite-meta.normsp.html'
+  local JOBS_MENU_HTML='jobs-menu.html'
+  local JOB_NAME_LINKS='job-name-link-urls.txt'
   [ -n "$GITHUB_REPOSITORY" ] || return 4$(
     echo E: 'Empty GITHUB_REPOSITORY!' >&2)
   local REPO_URL="https://github.com/$GITHUB_REPOSITORY"
@@ -28,11 +30,22 @@ function gather_ci_run_meta () {
     * ) echo E: $FUNCNAME: "Unexpected CLI argument: $1" >&2; return 4;;
   esac
 
-  cd -- "$GITHUB_ACTION_PATH" || return $?
-  gather_ci_run_meta__fallible || return $?$(echo E: >&2 \
+  cd -- "$META_TMP" || return $?
+  env | sort -V >gh-runner-env.txt
+  cp --no-target-directory -- "$GITHUB_EVENT_PATH" gh-event.json
+  npm config list --long --json >npm.cfg.json
+  npm version --json | tee -- npm.ver.json
+
+  local RV=
+  gather_ci_run_meta__fallible; RV=$?
+
+  cp --no-target-directory -- "$GITHUB_ENV" gh-env-file.json
+
+  [ "$RV" == 0 ] || echo E: >&2 \
     "Gathering meta data failed. The API may have changed in a way that" \
     "ghciu is not compatible with yet. Maybe you need to update it," \
-    "or run a newer version of its install action.")
+    "or run a newer version of its install action."
+  return "$RV"
 }
 
 
@@ -78,6 +91,21 @@ function gather_ci_run_meta__fallible () {
   [ -n "$WF_BN" ] || return 3$(
     echo E: "Unable to determine workflow basename!" >&2)
 
+  printf -- '%s=%q\n' \
+    GHCIU_TRACE_JOB "$GITHUB_JOB.${GITHUB_SHA:0:7}.$ATTEMPT_ID" \
+    GHCIU_ABBREV_SHA "${GITHUB_SHA:0:7}" \
+    GHCIU_WORKFLOW_BASENAME "$WF_BN" \
+    GHCIU_ATTEMPT_ID "$ATTEMPT_ID" \
+    >>"$GITHUB_ENV"
+  local VAL='
+    UTS=%s
+    LONG=%FT%T
+    SHORT=%y%m%d-%H%M%S
+    '
+  for VAL in $VAL; do
+    printf -- "GHCIU_WFSTART_${VAL%%=*}=%(${VAL#*=})T\n" -1 >>"$GITHUB_ENV"
+  done
+
   # local RAW_LOG_URL="$(jq --raw-output .logs_url -- "$ATTEMPT_META")"
   # ^-- Useless in a browser: Access will be denied without token header.
   local CI_JOB_ID=
@@ -92,8 +120,6 @@ function gather_ci_run_meta__fallible () {
     "url=$REPO_URL/releases/tag/$RLS_TAG" 'icon=%package'
 
   printf -- '%s=%q\n' \
-    GHCIU_WORKFLOW_BASENAME "$WF_BN" \
-    GHCIU_ATTEMPT_ID "$ATTEMPT_ID" \
     GHCIU_JOB_ID "$CI_JOB_ID" \
     >>"$GITHUB_ENV"
   # ghciu_stepsumm_dump_file "$GITHUB_ENV" --title 'GITHUB_ENV' --count-lines
@@ -117,7 +143,7 @@ function gather_ci_run_meta__detect_job_id () {
     | sed -nre 's! id="workflow-job-name-!\t!p' | sed -rf <(echo '
     s~^([^\t]*)\t([^"]+)"~\2\t\1~
     s~ data-[a-z-]+="[^"]*"~~g
-    ') | tee -- tmp.job-name-link-tags.html | sed -nrf <(echo '
+    ') | tee -- job-name-link-tags.html | sed -nrf <(echo '
     s~ href="[^" \n]+/actions/runs/[0-9]+/job/([0-9]+)~\n\1\n~
     s~^(\S+)\t[^\n]*\n([0-9]+)\n.*$~<<\1>>\2~p
     ') >"$JOB_NAME_LINKS"
