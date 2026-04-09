@@ -9,12 +9,6 @@ function gather_ci_run_meta () {
 
   local META_TMP="${CFG[logsdir]}/$FUNCNAME.$GITHUB_RUN_ATTEMPT"
   mkdir --parents -- "$META_TMP"
-  local ATTEMPT_META='ci-attempt-meta.json'
-  local SUITE_META='check-suite-meta.json'
-  local CI_RUN_HTML_ORIG='check-suite-meta.html'
-  local CI_RUN_HTML_NORMSP='check-suite-meta.normsp.html'
-  local JOBS_MENU_HTML='jobs-menu.html'
-  local JOB_NAME_LINKS='job-name-link-urls.txt'
   [ -n "$GITHUB_REPOSITORY" ] || return 4$(
     echo E: 'Empty GITHUB_REPOSITORY!' >&2)
   local REPO_URL="https://github.com/$GITHUB_REPOSITORY"
@@ -24,7 +18,7 @@ function gather_ci_run_meta () {
   case "$1" in
     '' ) ;;
 
-    detect_job_id | \
+    detect_job_checknum | \
     '' ) "$FUNCNAME"__"$@"; return $?;;
 
     * ) echo E: $FUNCNAME: "Unexpected CLI argument: $1" >&2; return 4;;
@@ -68,98 +62,94 @@ function gather_ci_run_meta__wget () {
 
 
 function gather_ci_run_meta__fallible () {
-  local ATTEMPT_URL="https://api.github.com/repos/$GITHUB_REPOSITORY$(
-    )/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
-  gather_ci_run_meta__wget "$ATTEMPT_META" -- "$ATTEMPT_URL" \
-    || return $?$(echo E: "Failed to download $ATTEMPT_URL" >&2)
-  # FMT=json ghciu_stepsumm_dump_file "$ATTEMPT_META" --count-lines
+  local API_URL_REPO="https://api.github.com/repos/$GITHUB_REPOSITORY"
+  local API_URL_RUN="$API_URL_REPO/actions/runs/$GITHUB_RUN_ID"
+  local API_URL_ATT="$API_URL_RUN/attempts/$GITHUB_RUN_ATTEMPT"
 
-  local ATTEMPT_ID="$(jq .id -- "$ATTEMPT_META")"
-  value_mustbe_simple_integer 'E: Unable to determine attempt ID:' \
-    "$ATTEMPT_ID" ge:1 || return $?
-
-  local SUITE_URL="https://api.github.com/repos/$GITHUB_REPOSITORY"
-  # SUITE_URL+="/commits/$GITHUB_SHA/check-suites"
-  SUITE_URL+="/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT"
-  gather_ci_run_meta__wget "$SUITE_META" -- "$SUITE_URL" \
-    || return $?$(echo E: "Failed to download $SUITE_URL" >&2)
-  # FMT=json ghciu_stepsumm_dump_file "$SUITE_META" --count-lines
-
-  local WF_BN="$(basename -- "$GITHUB_WORKFLOW")"
-  WF_BN="${WF_BN%.yaml}"
-  WF_BN="${WF_BN%.yml}"
-  [ -n "$WF_BN" ] || return 3$(
-    echo E: "Unable to determine workflow basename!" >&2)
-
-  printf -- '%s=%q\n' \
-    GHCIU_TRACE_JOB "$GITHUB_JOB.${GITHUB_SHA:0:7}.$ATTEMPT_ID" \
-    GHCIU_ABBREV_SHA "${GITHUB_SHA:0:7}" \
-    GHCIU_WORKFLOW_BASENAME "$WF_BN" \
-    GHCIU_ATTEMPT_ID "$ATTEMPT_ID" \
-    >>"$GITHUB_ENV"
-  local VAL='
-    UTS=%s
-    LONG=%FT%T
-    SHORT=%y%m%d-%H%M%S
+  local -A META=(
+    [wflow_title]="$GITHUB_WORKFLOW" # defaults to its YAML section key.
+    )
+  local KEY= VAL=
+  VAL='
+    uts=%s
+    long=%FT%T
+    short=%y%m%d-%H%M%S
     '
   for VAL in $VAL; do
-    printf -- "GHCIU_WFSTART_${VAL%%=*}=%(${VAL#*=})T\n" -1 >>"$GITHUB_ENV"
+    KEY="${VAL%%=*}"
+    VAL="${VAL#*=}"
+    VAL="$(printf -- "%($VAL)T" -2)"
+    META[wflow_start_$KEY]="$VAL"
   done
 
-  # local RAW_LOG_URL="$(jq --raw-output .logs_url -- "$ATTEMPT_META")"
-  # ^-- Useless in a browser: Access will be denied without token header.
-  local CI_JOB_ID=
-  local RAW_LOG_URL=
-  gather_ci_run_meta__detect_job_id || true
+  VAL="$GITHUB_WORKFLOW_REF"
+  META[wflow_ref_at]="${VAL#*@}"; VAL="${VAL%%@*}"
+  META[wflow_repo_owner]="${VAL%%/*}"; VAL="${VAL#*/}"
+  META[wflow_repo_name]="${VAL%%/*}"; VAL="${VAL#*/}"
+  META[wflow_file]="$VAL"
+  VAL="$(basename -- "$VAL")"
+  VAL="${VAL%.yaml}"
+  VAL="${VAL%.yml}"
+  META[wflow_bfn]="$VAL"
 
-  lib_report__link_badge "url=$RAW_LOG_URL" 'icon=%scroll' \
-    'error_name=no_job_id_detected'
+  META[abbrev_sha]="${GITHUB_SHA:0:7}"
+  META[trace_job]="$GITHUB_JOB.${GITHUB_SHA:0:7}.$GITHUB_RUN_ATTEMPT"
+
+  META[job_checknum]=
+  gather_ci_run_meta__detect_job_checknum || true
+
+  VAL="${META[job_checknum]}"
+  [ -z "$VAL" ] || VAL="$REPO_URL/commit/$GITHUB_SHA/checks/$VAL/logs"
+  lib_report__link_badge "url=$VAL" 'icon=%scroll' \
+    'error_name=no_job_checknum_detected'
 
   local RLS_TAG="$GHCIU_STEPSUMM_RELEASE_TAG"
   [ -z "$RLS_TAG" ] || lib_report__link_badge \
     "url=$REPO_URL/releases/tag/$RLS_TAG" 'icon=%package'
 
-  printf -- '%s=%q\n' \
-    GHCIU_JOB_ID "$CI_JOB_ID" \
-    >>"$GITHUB_ENV"
-  # ghciu_stepsumm_dump_file "$GITHUB_ENV" --title 'GITHUB_ENV' --count-lines
+  KEY="$(printf -- '%s\n' "${!META[@]}" | sort --version-sort)"
+  for KEY in $KEY; do
+    VAL="${META[$KEY]}"
+    printf -- 'GHCIU_%s=%q\n' "${KEY^^}" "$VAL" >>"$GITHUB_ENV"
+    printf -- '[%s]=%q\n' "$KEY" "$VAL" >>ci-run-meta.bash-dict.txt
+  done
 }
 
 
-function gather_ci_run_meta__detect_job_id () {
-  value_mustbe_simple_integer 'E: Unable to determine attempt ID:' \
-    "$ATTEMPT_ID" ge:1 || return $?
-  local CI_RUN_URL="$REPO_URL/actions/runs/$ATTEMPT_ID"
-  [ -s "$CI_RUN_HTML_ORIG" ] \
-    || gather_ci_run_meta__wget "$CI_RUN_HTML_ORIG" -- "$CI_RUN_URL" \
-    || return $?$(echo E: "Failed to download $CI_RUN_URL" >&2)
+function gather_ci_run_meta__detect_job_checknum () {
+  gather_ci_run_meta__wget gh-attempt-jobs.json -- "$API_URL_ATT/jobs" ||
+    return $?$(echo E: $FUNCNAME: "Failed to download jobs info from API" >&2)
+  <gh-attempt-jobs.json jq --raw-output '.jobs[] | .id, .name' |
+    sed -re 'N;s~\n~\t~;/\)$/!s~$~ ~' >gh-job-titles.tsv
 
-  <"$CI_RUN_HTML_ORIG" tr -s '\r\n \t' ' ' >"$CI_RUN_HTML_NORMSP" || return $?
-  LANG=C sed -zrf <(echo '
-    s~<h2\b[^<>]* class="ActionList-sectionDivider-title"[^<>]*>\s*~\n~g
-    ') -- "$CI_RUN_HTML_NORMSP" | grep -Pie '^job' >"$JOBS_MENU_HTML"
+  ##### 2026-04-10: Job title ("name") vs. YAML job section key: ##### #####
+  # Unfortunately, we only have the job title (the misleadingly named
+  # `name` property of the job) easily available, which fortunately does
+  # default to the YAML section key if missing.
+  # In case of the matrix strategy, a space character and the arguments
+  # (wrapped in parens) are appended to the title.
+  # To determine the section key, we could try and look it up in the workflow
+  # file, but even that would be unreliable because job titles could be
+  # duplicate or even misleading.
+  # For now, if you have to use job titles different from their section key,
+  # make sure they start with the section key and a space character.
+  # (And be conservative about what characters you use for the section key.)
 
-  grep -oPe '<a [^<>]*>' -- "$CI_RUN_HTML_NORMSP" \
-    | sed -nre 's! id="workflow-job-name-!\t!p' | sed -rf <(echo '
-    s~^([^\t]*)\t([^"]+)"~\2\t\1~
-    s~ data-[a-z-]+="[^"]*"~~g
-    ') | tee -- job-name-link-tags.html | sed -nrf <(echo '
-    s~ href="[^" \n]+/actions/runs/[0-9]+/job/([0-9]+)~\n\1\n~
-    s~^(\S+)\t[^\n]*\n([0-9]+)\n.*$~<<\1>>\2~p
-    ') >"$JOB_NAME_LINKS"
-
-  local VAL="<<$WF_BN.$GITHUB_JOB>>"$'\n'"<<$GITHUB_JOB>>"
-  CI_JOB_ID="$(grep -m 1 -Fe "$VAL" -- "$JOB_NAME_LINKS")"
-  CI_JOB_ID="${CI_JOB_ID##*>>}"
-  local E='E: Unable to determine CI job ID:'
-  if value_mustbe_simple_integer "$E" "$CI_JOB_ID" ge:1; then
-    RAW_LOG_URL="$REPO_URL/commit/$GITHUB_SHA/checks/$CI_JOB_ID/logs"
-  else
-    # ghciu_stepsumm_dump_file "$JOBS_MENU_HTML"
-    # ghciu_stepsumm_dump_file "$JOB_NAME_LINKS"
-    return 2
-  fi
+  local VAL=$'\t'"$GITHUB_JOB " ERR=
+  VAL="$(grep -Fe "$VAL" -- gh-job-titles.tsv | cut -sf 1)"
+  case "$VAL" in
+    '' ) ERR='Cannot find any job';;
+    *$'\n'* ) ERR='Found too many jobs';;
+    *[^0-9]* ) ERR='Found non-digit character in job number for job';;
+    [0-9]* ) META[job_checknum]="$VAL"; return 0;;
+    * ) # Neither digit nor non-digit nor empty => broken shell
+      ERR='Exotic control flow bug when looking up the job';;
+  esac
+  echo E: $FUNCNAME: "$ERR titled '$GITHUB_JOB'." >&2
+  return 4
 }
+
+
 
 
 

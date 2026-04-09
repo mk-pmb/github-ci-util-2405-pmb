@@ -9,7 +9,8 @@ function purge_old_wfruns () {
   purge_old_wfruns__decide_logtopic || return $?
   if [ "$1" == --hide-logtopic ]; then LOGTOPIC=; shift; fi
 
-  value_mustbe_simple_integer "E:$LOGTOPIC GHCIU_JOB_ID" "$GHCIU_JOB_ID" \
+  local CHECKNUM="$GHCIU_JOB_CHECKNUM"
+  value_mustbe_simple_integer "E:$LOGTOPIC job checknum" "$CHECKNUM" \
     ge:1 || return $?
 
   local KEY= VAL=
@@ -167,7 +168,7 @@ function purge_old_wfruns__process_tsv_runs_list () {
     local -p | grep ROW
 
     SKIP=
-    [ "${ROW[id]}" != "$GHCIU_JOB_ID" ] \
+    [ "${ROW[id]}" != "$CHECKNUM" ] \
       || [[ "$CONCLU" == *,SELF,* ]] || SKIP+=',SELF'
     [[ "$CONCLU" == *" ${ROW[conclusion]} "* ]] || SKIP+=',conclusion'
     [ "${CFG[trigger_events]}" == '*' ] || \
