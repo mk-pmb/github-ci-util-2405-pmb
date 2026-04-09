@@ -34,7 +34,7 @@ function gather_ci_run_meta () {
   env | sort -V >gh-runner-env.txt
   cp --no-target-directory -- "$GITHUB_EVENT_PATH" gh-event.json
   npm config list --long --json >npm.cfg.json
-  npm version --json | tee -- npm.ver.json
+  ( cd .. && npm version --json ) >npm.ver.json
 
   local RV=
   gather_ci_run_meta__fallible; RV=$?
