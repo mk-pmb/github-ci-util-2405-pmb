@@ -3,7 +3,6 @@
 ---
 
 name: 'Purge old workflow runs'
-description: ''
 
 inputs:
 
@@ -128,11 +127,11 @@ runs:
     - uses: actions/setup-node@v6
 
     - name: 'Install CI utils'
-      run: >
-        "$GITHUB_ACTION_PATH"/../install/install.sh
+      run: '"$GITHUB_ACTION_PATH"/../install/install.sh'
       shell: bash
 
-    - run: 'ghciu ghciu+s://act/purge-old-workflow-runs/purge.sh'
+    - name: 'Purge old workflows'
+      run: 'ghciu ghciu+s://act/purge-old-workflow-runs/purge.sh'
       shell: bash
       env:
         INPUTS_JSON: '${{ toJSON(inputs) }}'
