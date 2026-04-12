@@ -107,6 +107,11 @@ function ghciu_decide_logs_dir () {
 
 
 function ghciu_decide_logfile_name () {
+  while [ "$#" -ge 1 ]; do case "$TOPIC" in
+    chdir_relative_and_source | \
+    . ) shift;;
+    * ) break;;
+  esac; done
   local TOPIC="$1"
   case "$TOPIC" in
     '' ) TOPIC='no_logfile_topic_given';;
