@@ -96,19 +96,19 @@ function ghciu_cli_main () {
     "Failed to chdir back to our original working directory:" \
     "$CI_INVOKED_IN — this will probably mess with logging."
   if [ "$RV" == 0 ]; then
-    RV="D: Task done:$(printf ' ‹%s›' "$CI_TASK" "$@")"
-    echo "$RV" >>"$CI_LOG"
-    echo "$RV" >>"${CFG[task_done_report_file]}"
+    VAL="D: Task done:$(printf ' ‹%s›' "$CI_TASK" "$@")"
+    echo "$VAL" >>"$CI_LOG"
+    echo "$VAL" >>"${CFG[task_done_report_file]}"
     # ^-- We cannot use tee because depending on whether
     #     CFG[task_done_report_file] is /dev/stdout we'd need to either
     #     omit it from the tee arguments or mute tee's default output.
     ghciu_ensure_stepsumm_size_limit || return $?
     return 0
   fi
-  local FAIL_REPORT="E: Task failed (rv=$RV):$(
+  VAL="E: Task failed (rv=$RV):$(
     printf ' ‹%s›' "$CI_TASK" "$@")"
-  echo "$FAIL_REPORT" >&2
-  echo "$FAIL_REPORT" >>"$CI_LOG"
+  echo "$VAL" >&2
+  echo "$VAL" >>"$CI_LOG"
 
   if [ -z "$GITHUB_STEP_SUMMARY" ]; then
     true
