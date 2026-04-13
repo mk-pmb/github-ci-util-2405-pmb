@@ -29,6 +29,7 @@ function gather_ci_run_meta () {
   cp --no-target-directory -- "$GITHUB_EVENT_PATH" gh-event.json
   npm config list --long --json >npm.cfg.json
   ( cd .. && npm version --json ) >npm.ver.json
+  gather_ci_run_meta__investigate_ancestors || return $?
 
   local RV=
   gather_ci_run_meta__fallible; RV=$?
@@ -147,6 +148,17 @@ function gather_ci_run_meta__detect_job_checknum () {
   esac
   echo E: $FUNCNAME: "$ERR titled '$GITHUB_JOB'." >&2
   return 4
+}
+
+
+function gather_ci_run_meta__investigate_ancestors () {
+  local DEST='runner-pstree.txt'
+  pstree -Asap $$ >"$DEST"
+  local VAL='s~^ +\x60?\- *[^ ,]*,([0-9]+)( .*|$)~\1~p'
+  for VAL in $(sed -nre "$VAL" -- "$DEST"); do
+    echo
+    ls -l -- /proc/"$VAL"/fd/*
+  done >>"$DEST"
 }
 
 
