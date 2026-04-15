@@ -11,6 +11,11 @@ function ibm_audit_ci__cli_init () {
   [ -n "$CI" ] || return 0$(
     echo W: "Skipping audit-ci because env var CI is empty!" >&2)
 
+  echo W: 'Skip audit-ci: Unfortunately audit-ci currently (2026-04-15)' \
+    'fails to initialize, and seems to be unmaintained:' \
+    'https://github.com/IBM/audit-ci/issues/354' >&2
+  return 0
+
   cd -- "$GHCIU_DIR" || return $?
   local LOGF="tmp.ibm-audit-ci.$(printf -- '%(%y%m%d-%H%M%S)T' -1).$$.log"
   >"$LOGF" || return $?
