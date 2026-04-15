@@ -17,7 +17,10 @@ function fmt_markdown_textblock__core () {
       FMT+='######'
       echo -n "${FMT:2:${FMT:1:1}} "
       FMT='inline';;
-    * ) echo '```'"${FMT:-text}";;
+    log | \
+    txt | \
+    '' ) echo '```text';;
+    * ) echo '```'"$FMT";;
   esac
 
   local SED_OPTIM='
@@ -108,6 +111,15 @@ function fmt_markdown_textblock__details_file () {
     "File must be a regular file: $FILE")
   local ARG=
   local TITLE="$FILE"
+  local FMT="$FMT"
+  if [ -z "$FMT" ]; then
+    FMT="${FILE##*.}"
+    FMT="${FMT,,}"
+    case "$FMT" in
+      *[^a-z0-9]* ) FMT=;;
+    esac
+  fi
+  [ -n "$FMT" ] || FMT='text'
   while [ "$#" -ge 1 ]; do
     ARG="$1"
     [ "${ARG:0:1}" == - ] || break
