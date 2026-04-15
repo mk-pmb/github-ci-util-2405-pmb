@@ -8,16 +8,10 @@ function install_globally () {
   local GLOBAL_BIN_PATH='/usr/local/bin'
   optimize_global_bin_path || return $?
 
-  local ORIG= LINK= DEST_BASE="$GLOBAL_BIN_PATH/ghciu"
-  [ -L "$DEST_BASE" ] && rm -v -- "$DEST_BASE"
-  ln -vsT -- "$SELFPATH"/cli.sh "$DEST_BASE" || return $?
-  for ORIG in "$SELFPATH"/bash_funcs/*.sh; do
-    [ -x "$ORIG" ] || continue
-    LINK="$DEST_BASE-$(basename -- "${ORIG//_/-}" .sh)"
-    [ -L "$LINK" ] && rm -v -- "$LINK"
-    ln -vsT -- "$ORIG" "$LINK" || return $?
-  done
   cd -- "$SELFPATH" || return $?
+  <binlinks.cfg install_binlinks || return $?
+  return 0
+
   cp -vT -- act/install/npmrc.basics.ini "$HOME"/.npmrc || return $?
   ensure_nodejs_symlink || return $?
 
@@ -58,6 +52,23 @@ function ensure_nodejs_symlink () {
   NJS="$GLOBAL_BIN_PATH/nodejs"
   ln -vsT -- "$NODE" "$NJS" || return $?$(
     echo E: $FUNCNAME: "Cannot symlink node.js as nodejs!" >&2)
+}
+
+
+function install_binlinks () {
+  local ORIG= LINK=
+  while IFS= read -r ORIG; do
+    case "$ORIG" in
+      [a-z]*' <- '[a-z]* )
+        LINK="${ORIG%%' <- '*}"
+        ORIG="${ORIG#*' <- '}"
+        ;;
+      * ) continue;;
+    esac
+    LINK="$GLOBAL_BIN_PATH/$LINK"
+    [ -L "$LINK" ] && rm -v -- "$LINK"
+    ln -vsT -- "$SELFPATH/$ORIG" "$LINK" || return $?
+  done
 }
 
 
