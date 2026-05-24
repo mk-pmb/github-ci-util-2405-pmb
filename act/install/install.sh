@@ -12,6 +12,7 @@ function install_ghciu () {
 
 function ghciu_verify_nodejs_version () {
   local WANT="$WANT_NODEJS_VERSION"
+  [ "$WANT" != 0 ] || return 0
   local HAVE="$(nodejs --version | grep -xPe 'v?\d[\d\.]+')"
   local MAJOR="${HAVE%%.*}"
   MAJOR="${MAJOR#v}"

@@ -124,11 +124,16 @@ runs:
   using: 'composite'
   steps:
 
-    - uses: actions/setup-node@v6
 
     - name: 'Install CI utils'
-      run: '"$GITHUB_ACTION_PATH"/../install/install.sh'
-      shell: bash
+      # uses: '${{ github.action_repository }}/act/install@${{ github.action_ref }}'
+      # with:
+      #   nodejs_version: '0'
+      # ^-- Doesn't work: [2026-05-25] […].TemplateValidationException:
+      #   The template is not valid. […]/action.yaml (Line: […]):
+      #   Unrecognized named-value: 'github'.
+      #   Located at position 1 within expression: github.action_repository
+      uses: ../install/
 
     - name: 'Purge old workflows'
       run: 'ghciu ghciu+s://act/purge-old-workflow-runs/purge.sh'
