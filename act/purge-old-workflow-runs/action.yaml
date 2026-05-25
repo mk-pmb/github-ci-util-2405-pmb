@@ -125,20 +125,35 @@ runs:
   steps:
 
 
+    # - name: 'Install CI utils'
+    #   [2026-05-25] Unfortunately, we can't refer to ourselves in `uses`:
+    #   uses: '${{ github.action_repository }}/act/install@${{ github.action_ref }}'
+    #   with:
+    #     nodejs_version: '0'
+    #   ^-- [2026-05-25] Error: […].TemplateValidationException:
+    #     The template is not valid. […]/action.yaml (Line: […]):
+    #     Unrecognized named-value: 'github'.
+    #     Located at position 1 within expression: github.action_repository
+    #
+    #   So, instead, we have to copy the relevant parts from ../install/:
+
+    - name: 'Install Node.js so we can use npm'
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24.x'
+
     - name: 'Install CI utils'
-      # uses: '${{ github.action_repository }}/act/install@${{ github.action_ref }}'
-      # with:
-      #   nodejs_version: '0'
-      # ^-- Doesn't work: [2026-05-25] […].TemplateValidationException:
-      #   The template is not valid. […]/action.yaml (Line: […]):
-      #   Unrecognized named-value: 'github'.
-      #   Located at position 1 within expression: github.action_repository
-      uses: ../install/
+      run: '"$GITHUB_ACTION_PATH"/../install/install.sh'
+      shell: bash
+      env:
+        WANT_NODEJS_VERSION: '0'
 
     - name: 'Purge old workflows'
       run: 'ghciu ghciu+s://act/purge-old-workflow-runs/purge.sh'
       shell: bash
       env:
         INPUTS_JSON: '${{ toJSON(inputs) }}'
+
+
 
 ...
