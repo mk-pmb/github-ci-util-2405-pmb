@@ -47,12 +47,14 @@ function ghciu_cli_main () {
     * ) source_these_files --ci-dot "$1" || return $?;;
   esac; done
 
-  local CI_LOG=
-  if [ "$1" == --no-log ]; then shift; CI_LOG='/dev/null'; fi
-  if [ "$1" == --succeed-quietly ]; then
-    CFG[task_done_report_file]=/dev/null
-    shift
-  fi
+  local CI_LOG="${CFG[ci-log]}"
+  unset CFG[ci-log]
+  while [ -n "$1" ]; do case "$1" in
+    --no-log ) shift; CI_LOG='/dev/null';;
+    -q | --succeed-quietly ) shift; CFG[task_done_report_file]='/dev/null';;
+    -Q ) shift; set -- -q --no-log "$@";;
+    * ) break;;
+  esac; done
   ghciu_decide_logs_dir || return $?$(
     echo E: 'Failed to decide the directory for log files.' >&2)
   case "$1" in
