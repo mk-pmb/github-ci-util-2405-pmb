@@ -77,7 +77,6 @@ function ghciu_cli_main () {
 
   CI_LOG="$(ghciu_decide_logfile_name "$CI_TASK"
     )" || return $?$(echo E: "Failed to decide logfile destination!" >&2)
-  mkdir --parents -- "$(dirname -- "$CI_LOG")"
   >>"$CI_LOG" || return $?$(echo E: "Cannot write to CI log: $CI_LOG" >&2)
 
   export CI_FUNCD

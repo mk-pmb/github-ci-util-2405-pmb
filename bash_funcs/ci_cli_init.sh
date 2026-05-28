@@ -107,6 +107,10 @@ function ghciu_decide_logs_dir () {
 
 
 function ghciu_decide_logfile_name () {
+  if [ -n "$CI_LOG" ]; then
+    echo "$CI_LOG"
+    return 0
+  fi
   while [ "$#" -ge 1 ]; do case "$TOPIC" in
     chdir_relative_and_source | \
     . ) shift;;
