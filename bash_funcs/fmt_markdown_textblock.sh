@@ -27,6 +27,7 @@ function fmt_markdown_textblock__core () {
     # Strip terminal color codes:
     s~\x1b\[[0-9;]*m~~g
     s~\x1b\[K~~g
+    s~\r~~g
     '
 
   # How can we escape "`" and "<" characters at the start of a line for
@@ -36,7 +37,7 @@ function fmt_markdown_textblock__core () {
   # I tried HTML entities, they will be printed verbatim.
   # SED_OPTIM+=$'\n''s~^\x60|^<~\\&~g'
   # I tried a zero-width non-joiner, … it's invisible at least.
-  SED_OPTIM+=$'\n''s~^\x60|^<~\xE2\x80\x8C&~g'
+  SED_OPTIM+=$'\n''s~^(\s*)(\x60|<)~\1\xE2\x80\x8C\2~'
 
   LANG=C sed -re "$SED_OPTIM"
 
