@@ -11,16 +11,17 @@ function fmt_markdown_textblock () {
 
 function fmt_markdown_textblock__core () {
   echo
+  local VAL=
   case "$FMT" in
     inline ) ;;
     h[1-6] ) # initial headline
       FMT+='######'
       echo -n "${FMT:2:${FMT:1:1}} "
       FMT='inline';;
-    log | \
-    txt | \
     '' ) echo '```text';;
-    * ) echo '```'"$FMT";;
+    * )
+      VAL="$(fmt_markdown_textblock__guess_syntaxlang_from_filename ."$FMT")"
+      echo '```'"${VAL:-$FMT}";;
   esac
 
   local SED_OPTIM='
@@ -169,6 +170,167 @@ function ghciu_ensure_stepsumm_size_limit () {
   head --bytes="$MAX" -- "$GITHUB_STEP_SUMMARY" >>"$TMPF" || return $?
   mv --no-target-directory -- "$TMPF" "$GITHUB_STEP_SUMMARY" || return $?
 }
+
+
+function fmt_markdown_textblock__guess_syntaxlang_from_filename () {
+  local SRC="$1" FEXT= FMT= VAL=
+  SRC="$(basename -- "$SRC")"
+
+  # All lowercase?
+  VAL="${SRC,,}"
+  [ -n "$FMT" ] || [ "$VAL" != "$SRC" ] || case "$VAL" in
+    .git[a-z]* | \
+    .*ignore | \
+    . ) FMT='text';;
+    *[a-z]* ) ;;
+    * ) return 0;; # no letters in filename => unknown type.
+  esac
+
+  FEXT="${SRC##*.}"
+  [ -n "$FMT" ] || case "$FEXT" in
+    '' ) ;;
+
+    c )       FMT='c';;
+    ceson )   FMT='js';;
+    cfg )     FMT='ini';;
+    cjs )     FMT='js';;
+    conf )    FMT='ini';;
+    cpp )     FMT='cpp';;
+    eml )     FMT='text';;
+    htm )     FMT='html';;
+    inf )     FMT='ini';;
+    jsonl )   FMT='js';;
+    log )     FMT='text';;
+    md )      FMT='text';;
+    mjs )     FMT='js';;
+    patch )   FMT='diff';;
+    pl )      FMT='perl';;
+    rc )      FMT='bash';;
+    sh )      FMT='bash';;
+    txt )     FMT='text';;
+    yml )     FMT='yaml';;
+
+    diff | \
+    html | \
+    ini | \
+    js | \
+    json | \
+    py | \
+    sed | \
+    sql | \
+    tex | \
+    toml | \
+    xml | \
+    yaml | \
+    '' ) FMT="$FEXT";;
+  esac
+
+  # First segment all uppercase? (e.g. LICENSE, COPYING, AUTHORS, CREDITS)
+  VAL="${SRC%%.*}"
+  [ -n "$FMT" ] || [ "$VAL" != "${VAL^^}" ] || case "$VAL" in
+    [A-Z][A-Z][A-Z][A-Z]* ) FMT='text';;
+  esac
+
+  [ -z "$FMT" ] || echo "$FMT"
+}
+
+
+function fmt_markdown_textblock__bundle_files () {
+  local -A HOW=(
+    [max_dump_files]=256
+    [max_dump_size]=$(( 4 * 1024 * 1024 ))
+    )
+  local KEY= VAL= FMT=
+  while [ "$#" -ge 1 ]; do
+    case "$1" in
+      -- ) shift; break;;
+      --*=* ) VAL="${1#--}"; HOW["${VAL%%=*}"]="${VAL#*=}"; shift;;
+      * ) break;;
+    esac
+  done
+
+  [ "$#" -ge 1 ] || return 4$(echo E: $FUNCNAME: 'No input files given.' >&2)
+  [ "$#" -le "${HOW[max_dump_files]}" ] || return 4$(echo E: $FUNCNAME: >&2 \
+    "Too many input files ($# > ${HOW[max_dump_files]})")
+  printf -v VAL -- '</%s>\n' "$@"
+
+  local APOS="'" GRAV='`' QUOT='"'
+  # Construct our todo list:
+  exec < <(
+    # Priority files
+    echo "$VAL" | grep -Fe '</package.json>'
+    echo "$VAL" | grep -Fe '/package.json>'
+    echo "$VAL" | grep -Fe '</README'
+    echo "$VAL" | grep -Fe '/README'
+
+    # All other files
+    echo "$VAL"
+    )
+
+  local -A HAD=() SKIPPED=()
+  local SRC= FMT= SIZE= OTHER=
+  local FMT_STATS=
+  while IFS= read -r SRC; do
+    SRC="${SRC#'</'}"
+    SRC="${SRC#/}"
+    SRC="${SRC%'>'}"
+    [ -n "$SRC" ] || continue
+    [ -f "$SRC" ] || continue
+    [ -z "${HAD["$SRC"]}" ] || continue
+    HAD["$SRC"]=+
+    if [ -L "$SRC" ]; then
+      OTHER+="* $GRAV$SRC$GRAV: symlink to $GRAV$(
+        readlink -- "$SRC")$GRAV"$'\n'
+      FMT_STATS+=$'symlink\n'
+      continue
+    fi
+    if [ ! -s "$SRC" ]; then
+      OTHER+="* $GRAV$SRC$GRAV: empty"$'\n'
+      continue
+    fi
+
+    SIZE="$(stat -c %s -- "$SRC")"
+    # Expecting at least 1 byte because we already checked -s above.
+    [ "${SIZE:-0}" -ge 1 ] || return 4$(echo E: $FUNCNAME: >&2 \
+      "Cannot determine file size of non-empty input file: $SRC")
+    [ "$SIZE" -gt "${HOW[max_dump_size]}" ] || FMT="$(
+      fmt_markdown_textblock__guess_syntaxlang_from_filename "$SRC")"
+    if [ -z "$FMT" ]; then
+      OTHER+="* $GRAV$SRC$GRAV: $SIZE bytes, $(file --brief -- "$SRC")"$'\n'
+      FMT_STATS+=$'other\n'
+      continue
+    fi
+    FMT_STATS+="$FMT"$'\n'
+    VAL="File $GRAV$SRC$GRAV:"
+    VAL="$(FMT="$FMT" ghciu --no-log --succeed-quietly \
+      fmt_markdown_textblock details_file "$SRC" --title "$VAL")"
+      # ^-- ghciu = github-ci-util-2405-pmb
+    echo "$VAL<!-- end of $FMT file $QUOT$SRC$QUOT -->"
+    echo
+  done
+
+  if [ -n "$OTHER" ]; then
+    echo '<details><summary>Other files:</summary>'
+    echo
+    echo "$OTHER"
+    echo '</details>'
+    echo
+  fi
+
+  FMT_STATS="$(echo -n "$FMT_STATS" | sort --version-sort | uniq --count |
+    sort --general-numeric-sort --reverse |
+    sed -re 's~^\s+([0-9]+)\s(.*)$~\2×\1~')"
+  FMT_STATS="${FMT_STATS//$'\n'/, }"
+  echo "File type stats: $FMT_STATS"
+}
+
+
+
+
+
+
+
+
 
 
 
