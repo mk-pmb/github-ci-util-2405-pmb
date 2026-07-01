@@ -190,23 +190,33 @@ function fmt_markdown_textblock__guess_syntaxlang_from_filename () {
   [ -n "$FMT" ] || case "$FEXT" in
     '' ) ;;
 
+    bat )     FMT='batch';;
     c )       FMT='c';;
     ceson )   FMT='js';;
     cfg )     FMT='ini';;
     cjs )     FMT='js';;
+    cmd )     FMT='batch';;
     conf )    FMT='ini';;
     cpp )     FMT='cpp';;
+    cs )      FMT='csharp';;
+    csproj )  FMT='xml';;
     eml )     FMT='text';;
     htm )     FMT='html';;
     inf )     FMT='ini';;
     jsonl )   FMT='js';;
     log )     FMT='text';;
     md )      FMT='text';;
+    md5 )     FMT='text';;
     mjs )     FMT='js';;
     patch )   FMT='diff';;
     pl )      FMT='perl';;
+    ps1 )     FMT='pwsh';;
+    psd1 )    FMT='pwsh';;
+    psm1 )    FMT='pwsh';;
     rc )      FMT='bash';;
+    reg )     FMT='ini';;
     sh )      FMT='bash';;
+    sha )     FMT='text';;
     txt )     FMT='text';;
     yml )     FMT='yaml';;
 
