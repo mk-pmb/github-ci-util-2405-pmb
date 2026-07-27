@@ -12,8 +12,12 @@ function ghciu_cli_main () {
   source -- "$CI_FUNCD"/ci_cli_init.sh || return $?
 
   local CI_PROJECT_DIR=
+  local LOCAL_CONFIG_DIRS_PREFIX='cfg'
   local KEY= VAL=
   while [ -n "$1" ]; do
+    case "$1" in
+      --ignore-local-config ) LOCAL_CONFIG_DIRS_PREFIX=; shift; continue;;
+    esac
     VAL="${1#*=}"
     case "$1=" in
       --proj-dir=* ) CI_PROJECT_DIR="$VAL";;

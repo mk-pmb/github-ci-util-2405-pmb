@@ -17,7 +17,8 @@ function ghciu_cli_init_before_config () {
   fi
 
   source_available_rc_files "$GHCIU_DIR"/cfg || return $?
-  [ . -ef "$GHCIU_DIR" ] || source_available_rc_files cfg || return $?
+  [ . -ef "$GHCIU_DIR" ] || [ -z "$LOCAL_CONFIG_DIRS_PREFIX" ] ||
+    source_available_rc_files    "$LOCAL_CONFIG_DIRS_PREFIX"   || return $?
 }
 
 
