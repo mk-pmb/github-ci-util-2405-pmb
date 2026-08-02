@@ -261,7 +261,8 @@ function fmt_markdown_textblock__bundle_files () {
 
   [ "$#" -ge 1 ] || return 4$(echo E: $FUNCNAME: 'No input files given.' >&2)
   [ "$#" -le "${HOW[max_dump_files]}" ] || return 4$(echo E: $FUNCNAME: >&2 \
-    "Too many input files ($# > ${HOW[max_dump_files]})")
+    "Too many input files ($# > ${HOW[max_dump_files]}," \
+    "consider --max_dump_files=…)")
   printf -v VAL -- '</%s>\n' "$@"
 
   local APOS="'" GRAV='`' QUOT='"'
