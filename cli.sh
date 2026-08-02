@@ -110,8 +110,10 @@ function ghciu_cli_main () {
     ghciu_ensure_stepsumm_size_limit || return $?
     return 0
   fi
-  VAL="E: Task failed (rv=$RV):$(
-    printf ' ‹%s›' "$CI_TASK" "$@")"
+  VAL="E: Task failed (rv=$RV):$(printf ' ‹%s›' "$CI_TASK" "$@")"$'\v'
+  VAL="${VAL:0:500}…"
+  VAL="${VAL%$'\v…'}"
+  VAL="${VAL%$'\v'}"
   echo "$VAL" >&2
   echo "$VAL" >>"$CI_LOG"
 
