@@ -122,7 +122,7 @@ function ghciu_cli_main () {
   elif [[ "$CI_LOG" == /dev/* ]]; then
     true
   elif [ -f "$CI_LOG" ]; then
-    ci_fail_log_summary
+    FAIL_REPORT_TITLE="$VAL" ci_fail_log_summary
   fi
 
   return "$RV"

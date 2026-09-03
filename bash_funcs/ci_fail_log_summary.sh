@@ -5,7 +5,8 @@
 function ci_fail_log_summary () {
   [ -n "$GITHUB_STEP_SUMMARY" ] || local GITHUB_STEP_SUMMARY='/dev/stdout'
 
-  FMT=h2 fmt_markdown_textblock stepsumm deco --volcano "$FAIL_REPORT"
+  FMT=h2 fmt_markdown_textblock stepsumm deco --volcano \
+    "${FAIL_REPORT_TITLE:-(empty FAIL_REPORT_TITLE)}"
   if [ ! -s "$CI_LOG" ]; then
     echo "ghciu: Empty CI log albeit task failed (rv=$RV): \`$CI_LOG\`" \
       >>"$GITHUB_STEP_SUMMARY"
