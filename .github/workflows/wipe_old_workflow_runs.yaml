@@ -4,7 +4,7 @@
 # -*- coding: UTF-8, tab-width: 2 -*-
 ---
 
-name: '🗑 Wipe old workflow runs manually on demand'
+name: '🗑️ Wipe old workflow runs manually on demand'
 
 on:
   workflow_dispatch:

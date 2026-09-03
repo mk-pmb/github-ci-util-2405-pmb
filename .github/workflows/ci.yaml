@@ -4,7 +4,7 @@
 # -*- coding: UTF-8, tab-width: 2 -*-
 ---
 
-name: '☂ CI tests'
+name: '☂️ CI tests'
 
 on:
   push:
