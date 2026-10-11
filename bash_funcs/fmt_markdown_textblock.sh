@@ -263,33 +263,17 @@ function fmt_markdown_textblock__bundle_files () {
   [ "$#" -le "${HOW[max_dump_files]}" ] || return 4$(echo E: $FUNCNAME: >&2 \
     "Too many input files ($# > ${HOW[max_dump_files]}," \
     "consider --max_dump_files=…)")
-  printf -v VAL -- '</%s>\n' "$@"
+  # Construct our todo list:
+  exec < <(fmt_markdown_textblock__prioritize_bundle_files -- "$@")
 
   local APOS="'" GRAV='`' QUOT='"'
-  # Construct our todo list:
-  exec < <(
-    # Priority files
-    echo "$VAL" | grep -Fe '</package.json>'
-    echo "$VAL" | grep -Fe '/package.json>'
-    echo "$VAL" | grep -Fe '</README'
-    echo "$VAL" | grep -Fe '/README'
-
-    # All other files
-    echo "$VAL"
-    )
-
   local MDTBDF='fmt_markdown_textblock__details_file'
-  local -A HAD=() SKIPPED=()
+  local -A SKIPPED=()
   local SRC= FMT= SIZE= OTHER=
   local FMT_STATS=
   while IFS= read -r SRC; do
-    SRC="${SRC#'</'}"
-    SRC="${SRC#/}"
-    SRC="${SRC%'>'}"
     [ -n "$SRC" ] || continue
     [ -f "$SRC" ] || continue
-    [ -z "${HAD["$SRC"]}" ] || continue
-    HAD["$SRC"]=+
     if [ -L "$SRC" ]; then
       OTHER+="* $GRAV$SRC$GRAV: symlink to $GRAV$(
         readlink -- "$SRC")$GRAV"$'\n'
@@ -332,6 +316,37 @@ function fmt_markdown_textblock__bundle_files () {
     sed -re 's~^\s+([0-9]+)\s(.*)$~\2×\1~')"
   FMT_STATS="${FMT_STATS//$'\n'/, }"
   echo "File type stats: $FMT_STATS"
+}
+
+
+function fmt_markdown_textblock__prioritize_bundle_files () {
+  local VAL=
+  if [ "$#:$1" == 1:--stdin ]; then
+    VAL="$(sed -nre '/\S/{s!^!</!; s!$!>!p}')"
+  else
+    [ "$1" != -- ] || shift
+    printf -v VAL -- '</%s>\n' "$@"
+  fi
+  exec < <(
+    # Priority files
+    echo "$VAL" | grep -Fe '</package.json>'
+    echo "$VAL" | grep -Fe '/package.json>'
+    echo "$VAL" | grep -Fe '</README'
+    echo "$VAL" | grep -Fe '/README'
+
+    # All other files
+    echo "$VAL"
+    )
+  local -A HAD=()
+  while IFS= read -r VAL; do
+    VAL="${VAL#'</'}"
+    VAL="${VAL#/}"
+    VAL="${VAL%'>'}"
+    [ -n "$VAL" ] || continue
+    [ -z "${HAD["$VAL"]}" ] || continue
+    HAD["$VAL"]=+
+    echo "$VAL"
+  done
 }
 
 
