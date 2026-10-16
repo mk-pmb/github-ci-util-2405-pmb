@@ -203,11 +203,14 @@ function fmt_markdown_textblock__guess_syntaxlang_from_filename () {
     eml )     FMT='text';;
     htm )     FMT='html';;
     inf )     FMT='ini';;
+    json5 )   FMT='js';;
+    jsonc )   FMT='js';;
     jsonl )   FMT='js';;
     log )     FMT='text';;
     md )      FMT='text';;
     md5 )     FMT='text';;
     mjs )     FMT='js';;
+    ndjson )   FMT='js';;
     patch )   FMT='diff';;
     pl )      FMT='perl';;
     ps1 )     FMT='pwsh';;
