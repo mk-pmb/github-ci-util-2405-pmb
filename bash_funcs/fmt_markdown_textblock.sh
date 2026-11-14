@@ -56,7 +56,7 @@ function fmt_markdown_textblock__deco () {
     --volcano ) DECO='&#x1F525;&#x1F30B;&#x1F525;';;
   esac
   local MSG="$DECO $* $DECO"
-  <<<"$MSG" fmt_markdown_textblock__core
+  echo "$MSG" | fmt_markdown_textblock__core
 }
 
 
@@ -66,7 +66,7 @@ function fmt_markdown_textblock__capture_command () {
 
 
 function fmt_markdown_textblock__stepsumm () {
-  # <<<"$MSG" fmt_markdown_textblock stepsumm
+  # echo "$MSG" | fmt_markdown_textblock stepsumm
   [ -n "$GITHUB_STEP_SUMMARY" ] || return 0
   fmt_markdown_textblock "$@" >>"$GITHUB_STEP_SUMMARY" || return $?
   ghciu_ensure_stepsumm_size_limit || return $?
