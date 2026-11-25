@@ -1,5 +1,8 @@
 #!/bin/bash
 # -*- coding: utf-8, tab-width: 2 -*-
+#
+# For usage examples, see
+# ubborg-make-example-live-isos-pmb/.github/workflows/ci.yaml
 
 
 function ghciu_repo_unpacker () {
