@@ -19,7 +19,7 @@ function ghciu_repo_unpacker () {
   done
 
   local PACKS=()
-  readarray -t PACKS < <(grep -oPe '\S+' <<<"${UNP[packs]}")
+  readarray -t PACKS < <(echo "${UNP[packs]}" | grep -oPe '\S+')
   unset UNP[packs]
   [ "${#PACKS[@]}" == 0 ] || set -- "$@" "${PACKS[@]}"
 
